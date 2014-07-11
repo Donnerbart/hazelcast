@@ -9,6 +9,7 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
 import com.hazelcast.test.annotation.QuickTest;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -18,38 +19,38 @@ import org.junit.runner.RunWith;
 @Category(QuickTest.class)
 public class ClientProxyDestroyTest {
 
-    static HazelcastInstance client;
-    static HazelcastInstance server;
+    private static HazelcastInstance client;
+
+    private IAtomicLong proxy;
 
     @BeforeClass
-    public static void init() {
-        server = Hazelcast.newHazelcastInstance();
+    public static void beforeClass() {
+        Hazelcast.newHazelcastInstance();
         client = HazelcastClient.newHazelcastClient();
     }
 
     @AfterClass
-    public static void destroy() {
-        client.shutdown();
+    public static void afterClass() {
+        HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }
 
-    @Test(expected = DistributedObjectDestroyedException.class)
-    public void testUsageAfterDestroy() {
-        IAtomicLong proxy = newClientProxy();
-        proxy.destroy();
-
-        //since the object is destroyed, getting the value from the atomic long should fail
-        proxy.get();
+    @Before
+    public void setup() {
+        proxy = client.getAtomicLong(HazelcastTestSupport.randomString());
     }
 
     @Test
     public void testMultipleDestroyCalls() {
-        IAtomicLong proxy = newClientProxy();
         proxy.destroy();
         proxy.destroy();
     }
 
-    private IAtomicLong newClientProxy() {
-        return client.getAtomicLong(HazelcastTestSupport.randomString());
+    @Test(expected = DistributedObjectDestroyedException.class)
+    public void testUsageAfterDestroy() {
+        proxy.destroy();
+
+        // Since the object is destroyed, getting the value from the atomic long should fail
+        proxy.get();
     }
 }
