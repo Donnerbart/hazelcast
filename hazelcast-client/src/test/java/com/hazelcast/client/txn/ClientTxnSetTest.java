@@ -16,69 +16,44 @@
 
 package com.hazelcast.client.txn;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ISet;
 import com.hazelcast.core.TransactionalSet;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.transaction.TransactionContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static com.hazelcast.test.HazelcastTestSupport.randomString;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
-public class ClientTxnSetTest {
-    static HazelcastInstance client;
-    static HazelcastInstance server1;
-    static HazelcastInstance server2;
+public class ClientTxnSetTest extends AbstractTxnTest {
 
-    @BeforeClass
-    public static void init(){
-        server1 = Hazelcast.newHazelcastInstance();
-        client = HazelcastClient.newHazelcastClient();
-    }
-
-    @AfterClass
-    public static void destroy() {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
-    }
+    private static final String DEFAULT_ELEMENT = "element";
 
     @Test
     public void testAdd_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        assertTrue(txnSet.add(element));
-        assertEquals(1, txnSet.size());
+        TransactionalSet<Object> transactionalSet = context.getSet(randomName);
+
+        assertTrue(transactionalSet.add(DEFAULT_ELEMENT));
+        assertEquals(1, transactionalSet.size());
 
         context.commitTransaction();
     }
 
     @Test
     public void testSetSizeAfterAdd_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
+        ISet<String> set = client.getSet(randomName);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        txnSet.add(element);
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        transactionalSet.add(DEFAULT_ELEMENT);
 
         context.commitTransaction();
 
@@ -87,33 +62,27 @@ public class ClientTxnSetTest {
 
     @Test
     public void testRemove_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-        set.add(element);
+        ISet<String> set = client.getSet(randomName);
+        set.add(DEFAULT_ELEMENT);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        assertTrue(txnSet.remove(element));
-        assertFalse(txnSet.remove("NOT_THERE"));
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        assertTrue(transactionalSet.remove(DEFAULT_ELEMENT));
+        assertFalse(transactionalSet.remove("NOT_THERE"));
 
         context.commitTransaction();
     }
 
     @Test
     public void testSetSizeAfterRemove_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-        set.add(element);
+        ISet<String> set = client.getSet(randomName);
+        set.add(DEFAULT_ELEMENT);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        txnSet.remove(element);
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        transactionalSet.remove(DEFAULT_ELEMENT);
 
         context.commitTransaction();
 
@@ -122,48 +91,43 @@ public class ClientTxnSetTest {
 
     @Test
     public void testAddDuplicateElement_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        assertTrue(txnSet.add(element));
-        assertFalse(txnSet.add(element));
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+
+        assertTrue(transactionalSet.add(DEFAULT_ELEMENT));
+        assertFalse(transactionalSet.add(DEFAULT_ELEMENT));
+
         context.commitTransaction();
-        assertEquals(1, client.getSet(setName).size());
+
+        assertEquals(1, client.getSet(randomName).size());
     }
 
     @Test
     public void testAddExistingElement_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-        set.add(element);
+        ISet<String> set = client.getSet(randomName);
+        set.add(DEFAULT_ELEMENT);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        assertFalse(txnSet.add(element));
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        assertFalse(transactionalSet.add(DEFAULT_ELEMENT));
 
         context.commitTransaction();
-        assertEquals(1,set.size());
+
+        assertEquals(1, set.size());
     }
 
     @Test
     public void testSetSizeAfterAddingDuplicateElement_withinTxn() throws Exception {
-        final String element = "item1";
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-        set.add(element);
+        ISet<String> set = client.getSet(randomName);
+        set.add(DEFAULT_ELEMENT);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
 
-        final TransactionalSet<Object> txnSet = context.getSet(setName);
-        txnSet.add(element);
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        transactionalSet.add(DEFAULT_ELEMENT);
+
         context.commitTransaction();
 
         assertEquals(1, set.size());
@@ -171,15 +135,14 @@ public class ClientTxnSetTest {
 
     @Test
     public void testAddRollBack() throws Exception {
-        final String setName = randomString();
-        final ISet set = client.getSet(setName);
-
+        ISet<String> set = client.getSet(randomName);
         set.add("item1");
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        final TransactionalSet<Object> setTxn = context.getSet(setName);
-        setTxn.add("item2");
+
+        TransactionalSet<String> transactionalSet = context.getSet(randomName);
+        transactionalSet.add("item2");
+
         context.rollbackTransaction();
 
         assertEquals(1, set.size());

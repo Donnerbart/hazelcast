@@ -16,17 +16,13 @@
 
 package com.hazelcast.client.txn;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.config.Config;
 import com.hazelcast.config.MultiMapConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MultiMap;
 import com.hazelcast.core.TransactionalMultiMap;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
 import com.hazelcast.transaction.TransactionContext;
-import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -40,84 +36,75 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static com.hazelcast.test.HazelcastTestSupport.randomString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
-public class ClientTxnMultiMapTest {
+public class ClientTxnMultiMapTest extends AbstractTxnTest {
 
-    private static final String multiMapBackedByList = "BackedByList*";
-    static HazelcastInstance client;
-    static HazelcastInstance server;
+    private static final String DEFAULT_KEY = "key";
+    private static final String DEFAULT_VALUE = "value";
+
+    private static final String MULTI_MAP_BACKED_BY_LIST = "backedByList*";
+
+    private String backedByListMapName;
 
     @BeforeClass
-    public static void init() {
-
-        Config config = new Config();
-        MultiMapConfig multiMapConfig = config.getMultiMapConfig(multiMapBackedByList);
+    public static void beforeClass() {
+        MultiMapConfig multiMapConfig = config.getMultiMapConfig(MULTI_MAP_BACKED_BY_LIST);
         multiMapConfig.setValueCollectionType(MultiMapConfig.ValueCollectionType.LIST);
 
-        server = Hazelcast.newHazelcastInstance(config);
-        client = HazelcastClient.newHazelcastClient();
+        AbstractTxnTest.beforeClass();
     }
 
-    @AfterClass
-    public static void destroy() {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
+    @Before
+    public void setup() {
+        super.setup();
+
+        backedByListMapName = MULTI_MAP_BACKED_BY_LIST + randomString();
     }
 
     @Test
     public void testRemove() throws Exception {
-        final String mapName = randomString();
-        final String key = "key";
-        final String val = "value";
+        MultiMap<String, String> multiMap = client.getMultiMap(randomName);
+        multiMap.put(DEFAULT_KEY, DEFAULT_VALUE);
 
-        MultiMap multiMap = client.getMultiMap(mapName);
-        multiMap.put(key, val);
+        context.beginTransaction();
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
+        TransactionalMultiMap txMultiMap = context.getMultiMap(randomName);
+        txMultiMap.remove(DEFAULT_KEY, DEFAULT_VALUE);
 
-        TransactionalMultiMap txnMultiMap = tx.getMultiMap(mapName);
-        txnMultiMap.remove(key, val);
+        context.commitTransaction();
 
-        tx.commitTransaction();
-
-        assertEquals(Collections.EMPTY_LIST, client.getMultiMap(mapName).get(key));
+        assertEquals(Collections.EMPTY_LIST, client.getMultiMap(randomName).get(DEFAULT_KEY));
     }
 
     @Test
     public void testRemoveAll() throws Exception {
-        final String mapName = randomString();
-        final String key = "key";
-
-        MultiMap multiMap = client.getMultiMap(mapName);
+        MultiMap<String, Integer> multiMap = client.getMultiMap(randomName);
         for (int i = 0; i < 10; i++) {
-            multiMap.put(key, i);
+            multiMap.put(DEFAULT_KEY, i);
         }
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
+        context.beginTransaction();
 
-        TransactionalMultiMap txnMultiMap = tx.getMultiMap(mapName);
-        txnMultiMap.remove(key);
-        tx.commitTransaction();
+        TransactionalMultiMap txMultiMap = context.getMultiMap(randomName);
+        txMultiMap.remove(DEFAULT_KEY);
 
-        assertEquals(Collections.EMPTY_LIST, multiMap.get(key));
+        context.commitTransaction();
+
+        assertEquals(Collections.EMPTY_LIST, multiMap.get(DEFAULT_KEY));
     }
 
     @Test
-    public void testConcrruentTxnPut() throws Exception {
-        final String mapName = randomString();
-        final MultiMap multiMap = client.getMultiMap(mapName);
+    public void testConcurrentTxnPut() throws Exception {
+        final MultiMap<Integer, String> multiMap = client.getMultiMap(randomName);
 
-        final int threads = 10;
-        final ExecutorService ex = Executors.newFixedThreadPool(threads);
+        int threads = 10;
+        ExecutorService ex = Executors.newFixedThreadPool(threads);
+
         final CountDownLatch latch = new CountDownLatch(threads);
         final AtomicReference<Throwable> error = new AtomicReference<Throwable>(null);
 
@@ -127,15 +114,18 @@ public class ClientTxnMultiMapTest {
                 public void run() {
                     multiMap.put(key, "value");
 
-                    final TransactionContext context = client.newTransactionContext();
+                    TransactionContext localContext = client.newTransactionContext();
                     try {
-                        context.beginTransaction();
-                        final TransactionalMultiMap txnMultiMap = context.getMultiMap(mapName);
-                        txnMultiMap.put(key, "value");
-                        txnMultiMap.put(key, "value1");
-                        txnMultiMap.put(key, "value2");
-                        assertEquals(3, txnMultiMap.get(key).size());
-                        context.commitTransaction();
+                        localContext.beginTransaction();
+
+                        TransactionalMultiMap<Integer, String> transactionalMap = localContext.getMultiMap(randomName);
+                        transactionalMap.put(key, "value");
+                        transactionalMap.put(key, "value1");
+                        transactionalMap.put(key, "value2");
+
+                        assertEquals(3, transactionalMap.get(key).size());
+
+                        localContext.commitTransaction();
 
                         assertEquals(3, multiMap.get(key).size());
                     } catch (Exception e) {
@@ -148,6 +138,7 @@ public class ClientTxnMultiMapTest {
         }
         try {
             latch.await(1, TimeUnit.MINUTES);
+
             assertNull(error.get());
         } finally {
             ex.shutdownNow();
@@ -156,94 +147,77 @@ public class ClientTxnMultiMapTest {
 
     @Test
     public void testPutAndRoleBack() throws Exception {
-        final String mapName = randomString();
-        final String key = "key";
-        final String value = "value";
-        final MultiMap multiMap = client.getMultiMap(mapName);
+        MultiMap<String, String> multiMap = client.getMultiMap(randomName);
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
-        TransactionalMultiMap mulitMapTxn = tx.getMultiMap(mapName);
-        mulitMapTxn.put(key, value);
-        mulitMapTxn.put(key, value);
-        tx.rollbackTransaction();
+        context.beginTransaction();
 
-        assertEquals(Collections.EMPTY_LIST, multiMap.get(key));
+        TransactionalMultiMap<String, String> transactionalMap = context.getMultiMap(randomName);
+        transactionalMap.put(DEFAULT_KEY, DEFAULT_VALUE);
+        transactionalMap.put(DEFAULT_KEY, DEFAULT_VALUE);
+
+        context.rollbackTransaction();
+
+        assertEquals(Collections.EMPTY_LIST, multiMap.get(DEFAULT_KEY));
     }
 
     @Test
     public void testSize() throws Exception {
-        final String mapName = randomString();
-        final String key = "key";
-        final String value = "value";
-        final MultiMap multiMap = client.getMultiMap(mapName);
+        MultiMap<String, String> multiMap = client.getMultiMap(randomName);
+        multiMap.put(DEFAULT_KEY, DEFAULT_VALUE);
 
-        multiMap.put(key, value);
+        context.beginTransaction();
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
-        TransactionalMultiMap mulitMapTxn = tx.getMultiMap(mapName);
-        mulitMapTxn.put(key, "newValue");
-        mulitMapTxn.put("newKey", value);
-        assertEquals(3, mulitMapTxn.size());
+        TransactionalMultiMap<String, String> transactionalMap = context.getMultiMap(randomName);
+        transactionalMap.put(DEFAULT_KEY, "newValue");
+        transactionalMap.put("newKey", DEFAULT_VALUE);
 
-        tx.commitTransaction();
+        assertEquals(3, transactionalMap.size());
+
+        context.commitTransaction();
     }
 
     @Test
     public void testCount() throws Exception {
-        final String mapName = randomString();
-        final String key = "key";
-        final String value = "value";
-        final MultiMap multiMap = client.getMultiMap(mapName);
+        MultiMap<String, String> multiMap = client.getMultiMap(randomName);
+        multiMap.put(DEFAULT_KEY, DEFAULT_VALUE);
 
-        multiMap.put(key, value);
+        context.beginTransaction();
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
-        TransactionalMultiMap mulitMapTxn = tx.getMultiMap(mapName);
-        mulitMapTxn.put(key, "newValue");
+        TransactionalMultiMap<String, String> transactionalMap = context.getMultiMap(randomName);
+        transactionalMap.put(DEFAULT_KEY, "newValue");
 
-        assertEquals(2, mulitMapTxn.valueCount(key));
+        assertEquals(2, transactionalMap.valueCount(DEFAULT_KEY));
 
-        tx.commitTransaction();
+        context.commitTransaction();
     }
 
     @Test
     public void testGet_whenBackedWithList() throws Exception {
-        final String mapName = multiMapBackedByList+randomString();
+        MultiMap<String, String> multiMap = server.getMultiMap(backedByListMapName);
+        multiMap.put(DEFAULT_KEY, DEFAULT_VALUE);
 
-        final String key = "key";
-        final String value = "value";
+        context.beginTransaction();
 
-        final MultiMap multiMap = server.getMultiMap(mapName);
+        TransactionalMultiMap<String, String> transactionalMap = context.getMultiMap(backedByListMapName);
+        Collection<String> collection = transactionalMap.get(DEFAULT_KEY);
 
-        multiMap.put(key, value);
+        assertFalse(collection.isEmpty());
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
-        TransactionalMultiMap mulitMapTxn = tx.getMultiMap(mapName);
-        Collection c = mulitMapTxn.get(key);
-        assertFalse(c.isEmpty());
-        tx.commitTransaction();
+        context.commitTransaction();
     }
 
     @Test
     public void testRemove_whenBackedWithList() throws Exception {
-        final String mapName = multiMapBackedByList+randomString();
+        MultiMap<String, String> multiMap = server.getMultiMap(backedByListMapName);
+        multiMap.put(DEFAULT_KEY, DEFAULT_VALUE);
 
-        final String key = "key";
-        final String value = "value";
+        context.beginTransaction();
 
-        final MultiMap multiMap = server.getMultiMap(mapName);
+        TransactionalMultiMap<String, String> transactionalMap = context.getMultiMap(backedByListMapName);
+        Collection<String> collection = transactionalMap.remove(DEFAULT_KEY);
 
-        multiMap.put(key, value);
+        assertFalse(collection.isEmpty());
 
-        TransactionContext tx = client.newTransactionContext();
-        tx.beginTransaction();
-        TransactionalMultiMap mulitMapTxn = tx.getMultiMap(mapName);
-        Collection c = mulitMapTxn.remove(key);
-        assertFalse(c.isEmpty());
-        tx.commitTransaction();
+        context.commitTransaction();
     }
 }

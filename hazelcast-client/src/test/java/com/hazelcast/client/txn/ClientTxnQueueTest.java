@@ -16,16 +16,10 @@
 
 package com.hazelcast.client.txn;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IQueue;
 import com.hazelcast.core.TransactionalQueue;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import com.hazelcast.transaction.TransactionContext;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -33,54 +27,38 @@ import org.junit.runner.RunWith;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.hazelcast.test.HazelcastTestSupport.randomString;
-import static com.hazelcast.test.HazelcastTestSupport.sleepSeconds;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(QuickTest.class)
-public class ClientTxnQueueTest {
+public class ClientTxnQueueTest extends AbstractTxnTest {
 
-    static HazelcastInstance client;
-    static HazelcastInstance server;
-
-    @BeforeClass
-    public static void init(){
-        server = Hazelcast.newHazelcastInstance();
-        client = HazelcastClient.newHazelcastClient();
-    }
-
-    @AfterClass
-    public static void destroy() {
-        HazelcastClient.shutdownAll();
-        Hazelcast.shutdownAll();
-    }
+    private static final String DEFAULT_ITEM = "offered";
 
     @Test
     public void testTransactionalOfferPoll() {
-        final String item = "offered";
-        final String queueName = randomString();
-        final IQueue queue = client.getQueue(queueName);
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue txnQueue = context.getQueue(queueName);
-        txnQueue.offer(item);
-        assertEquals(item, txnQueue.poll());
+
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+        transactionalQueue.offer(DEFAULT_ITEM);
+
+        assertEquals(DEFAULT_ITEM, transactionalQueue.poll());
+
         context.commitTransaction();
     }
 
     @Test
     public void testQueueSizeAfterTxnOfferPoll() {
-        final String item = "offered";
-        final String queueName = randomString();
-        final IQueue queue = client.getQueue(queueName);
+        IQueue queue = client.getQueue(randomName);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue txnQueue = context.getQueue(queueName);
-        txnQueue.offer(item);
-        txnQueue.poll();
+
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+        transactionalQueue.offer(DEFAULT_ITEM);
+        transactionalQueue.poll();
+
         context.commitTransaction();
 
         assertEquals(0, queue.size());
@@ -88,24 +66,20 @@ public class ClientTxnQueueTest {
 
     @Test
     public void testTransactionalOfferTake() throws InterruptedException {
-        final String item = "offered";
-        final String queueName = randomString();
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue<String> txnQueue = context.getQueue(queueName);
-        assertTrue(txnQueue.offer(item));
-        assertEquals(1, txnQueue.size());
-        assertEquals(item, txnQueue.take());
+
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+
+        assertTrue(transactionalQueue.offer(DEFAULT_ITEM));
+        assertEquals(1, transactionalQueue.size());
+        assertEquals(DEFAULT_ITEM, transactionalQueue.take());
+
         context.commitTransaction();
     }
 
     @Test
     public void testTransactionalQueueGetsOfferedItems_whenBlockedOnPoll() throws InterruptedException{
-        final String item = "offered1";
-        final String queueName = randomString();
-        final IQueue queue1 = client.getQueue(queueName);
-
+        final IQueue<String> queue = client.getQueue(randomName);
         final CountDownLatch justBeforeBlocked = new CountDownLatch(1);
 
         new Thread() {
@@ -113,52 +87,46 @@ public class ClientTxnQueueTest {
                 try {
                     justBeforeBlocked.await();
                     sleepSeconds(1);
-                    queue1.offer(item);
+                    queue.offer(DEFAULT_ITEM);
                 } catch (InterruptedException e) {
-                    fail("failed"+e);
+                    fail("failed" + e);
                 }
             }
         }.start();
 
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue txnQueue1 = context.getQueue(queueName);
 
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
         justBeforeBlocked.countDown();
-        Object result = txnQueue1.poll(5, TimeUnit.SECONDS);
+        String result = transactionalQueue.poll(5, TimeUnit.SECONDS);
 
-        assertEquals("TransactionalQueue while blocked in pol should get item offered from client queue", item, result);
+        assertEquals("TransactionalQueue while blocked in pol should get item offered from client queue", DEFAULT_ITEM, result);
 
         context.commitTransaction();
     }
 
     @Test
     public void testTransactionalPeek() {
-        final String item = "offered";
-        final String queunName = randomString();
-        final IQueue queue = client.getQueue(queunName);
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue txnQueue = context.getQueue(queunName);
 
-        txnQueue.offer(item);
-        assertEquals(item, txnQueue.peek());
-        assertEquals(item, txnQueue.peek());
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+        transactionalQueue.offer(DEFAULT_ITEM);
+
+        assertEquals(DEFAULT_ITEM, transactionalQueue.peek());
+        assertEquals(DEFAULT_ITEM, transactionalQueue.peek());
 
         context.commitTransaction();
     }
 
     @Test
     public void testTransactionalOfferRoleBack() {
-        final String name = randomString();
-        final IQueue queue = client.getQueue(name);
+        IQueue queue = client.getQueue(randomName);
 
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue<String> qTxn = context.getQueue(name);
-        qTxn.offer("ITEM");
+
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+        transactionalQueue.offer(DEFAULT_ITEM);
+
         context.rollbackTransaction();
 
         assertEquals(0, queue.size());
@@ -166,33 +134,29 @@ public class ClientTxnQueueTest {
 
     @Test
     public void testTransactionalQueueSize() {
-        final String item = "offered";
-        final String name = randomString();
-        final IQueue queue = client.getQueue(name);
+        IQueue<String> queue = client.getQueue(randomName);
+        queue.offer(DEFAULT_ITEM);
 
-        queue.offer(item);
-
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue<String> txnQueue = context.getQueue(name);
 
-        txnQueue.offer(item);
-        assertEquals(2, txnQueue.size());
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+        transactionalQueue.offer(DEFAULT_ITEM);
+
+        assertEquals(2, transactionalQueue.size());
 
         context.rollbackTransaction();
     }
 
-
     @Test
     public void testTransactionalOfferAndPollWithTimeout() throws InterruptedException {
-        final String item = "offered";
-        final String name = randomString();
-        final TransactionContext context = client.newTransactionContext();
         context.beginTransaction();
-        TransactionalQueue<String> txnQueue = context.getQueue(name);
-        assertTrue(txnQueue.offer(item));
-        assertEquals(1, txnQueue.size());
-        assertEquals(item, txnQueue.poll(5, TimeUnit.SECONDS));
+
+        TransactionalQueue<String> transactionalQueue = context.getQueue(randomName);
+
+        assertTrue(transactionalQueue.offer(DEFAULT_ITEM));
+        assertEquals(1, transactionalQueue.size());
+        assertEquals(DEFAULT_ITEM, transactionalQueue.poll(5, TimeUnit.SECONDS));
+
         context.commitTransaction();
     }
 }

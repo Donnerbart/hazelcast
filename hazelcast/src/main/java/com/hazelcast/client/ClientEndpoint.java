@@ -153,10 +153,10 @@ public final class ClientEndpoint implements Client {
         return type;
     }
 
-    public TransactionContext getTransactionContext(String txnId) {
-        final TransactionContext transactionContext = transactionContextMap.get(txnId);
+    public TransactionContext getTransactionContext(String transactionId) {
+        final TransactionContext transactionContext = transactionContextMap.get(transactionId);
         if (transactionContext == null) {
-            throw new TransactionException("No transaction context found for txnId:" + txnId);
+            throw new TransactionException("No transaction context found for transactionId:" + transactionId);
         }
         return transactionContext;
     }
@@ -169,8 +169,8 @@ public final class ClientEndpoint implements Client {
         transactionContextMap.put(transactionContext.getTxnId(), transactionContext);
     }
 
-    public void removeTransactionContext(String txnId) {
-        transactionContextMap.remove(txnId);
+    public void removeTransactionContext(String transactionId) {
+        transactionContextMap.remove(transactionId);
     }
 
     public void setListenerRegistration(final String service, final String topic, final String id) {
