@@ -6,9 +6,10 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.ISemaphore;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
-import com.hazelcast.test.annotation.ProblematicTest;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -24,17 +25,16 @@ import static org.junit.Assert.assertNull;
 @Category(QuickTest.class)
 public class ClientSemaphoreThreadedTest {
 
-    protected static HazelcastInstance client;
-    protected static HazelcastInstance server;
+    private static HazelcastInstance client;
 
     @BeforeClass
-    public static void init(){
-        server = Hazelcast.newHazelcastInstance();
+    public static void beforeClass() {
+        Hazelcast.newHazelcastInstance();
         client = HazelcastClient.newHazelcastClient();
     }
 
     @AfterClass
-    public static void destroy() {
+    public static void afterClass() {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }
@@ -49,85 +49,90 @@ public class ClientSemaphoreThreadedTest {
         concurrent_trySemaphoreTest(true);
     }
 
-    public void concurrent_trySemaphoreTest(final boolean tryWithTimeOut) {
-        final ISemaphore semaphore = client.getSemaphore(randomString());
+    private void concurrent_trySemaphoreTest(boolean tryWithTimeOut) {
+        ISemaphore semaphore = client.getSemaphore(randomString());
         semaphore.init(1);
-        final AtomicInteger upTotal = new AtomicInteger(0);
-        final AtomicInteger downTotal = new AtomicInteger(0);
 
-        final SemaphoreTestThread threads[] = new SemaphoreTestThread[8];
-        for(int i=0; i<threads.length; i++){
-            SemaphoreTestThread t;
-            if(tryWithTimeOut){
-                t = new TrySemaphoreTimeOutThread(semaphore, upTotal, downTotal);
-            }else{
-                t = new TrySemaphoreThread(semaphore, upTotal, downTotal);
+        AtomicInteger upTotal = new AtomicInteger(0);
+        AtomicInteger downTotal = new AtomicInteger(0);
+
+        SemaphoreTestThread threads[] = new SemaphoreTestThread[8];
+        for (int i = 0; i < threads.length; i++) {
+            SemaphoreTestThread thread;
+            if (tryWithTimeOut) {
+                thread = new TrySemaphoreTimeOutThread(semaphore, upTotal, downTotal);
+            } else {
+                thread = new TrySemaphoreThread(semaphore, upTotal, downTotal);
             }
-            t.start();
-            threads[i] = t;
+            thread.start();
+            threads[i] = thread;
         }
         HazelcastTestSupport.assertJoinable(threads);
 
-        for(SemaphoreTestThread t : threads){
-            assertNull("thread "+ t +" has error "+t.error, t.error);
+        for (SemaphoreTestThread t : threads) {
+            assertNull("thread " + t + " has error " + t.error, t.error);
         }
 
         assertEquals("concurrent access to locked code caused wrong total", 0, upTotal.get() + downTotal.get());
     }
 
-    static class TrySemaphoreThread extends SemaphoreTestThread{
-        public TrySemaphoreThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal){
+    private static class TrySemaphoreThread extends SemaphoreTestThread {
+        private TrySemaphoreThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal) {
             super(semaphore, upTotal, downTotal);
         }
 
-        public void iterativelyRun() throws Exception{
-            if(semaphore.tryAcquire()){
+        protected void iterativelyRun() throws Exception {
+            if (semaphore.tryAcquire()) {
                 work();
                 semaphore.release();
             }
         }
     }
 
-    static class TrySemaphoreTimeOutThread extends SemaphoreTestThread{
-        public TrySemaphoreTimeOutThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal){
+    private static class TrySemaphoreTimeOutThread extends SemaphoreTestThread {
+        private TrySemaphoreTimeOutThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal) {
             super(semaphore, upTotal, downTotal);
         }
 
-        public void iterativelyRun() throws Exception{
-            if(semaphore.tryAcquire(1, TimeUnit.MILLISECONDS )){
+        protected void iterativelyRun() throws Exception {
+            if (semaphore.tryAcquire(1, TimeUnit.MILLISECONDS)) {
                 work();
                 semaphore.release();
             }
         }
     }
 
-    static abstract class SemaphoreTestThread extends Thread{
-        static private final int MAX_ITTERATIONS = 1000*10;
+    private static abstract class SemaphoreTestThread extends Thread {
+        static private final int MAX_ITERATIONS = 1000 * 10;
+
+        protected final ISemaphore semaphore;
+
         private final Random random = new Random();
-        protected final ISemaphore semaphore ;
-        protected final AtomicInteger upTotal;
-        protected final AtomicInteger downTotal;
-        public volatile Throwable error;
+        private final AtomicInteger upTotal;
+        private final AtomicInteger downTotal;
 
-        public SemaphoreTestThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal){
+        private volatile Throwable error;
+
+        protected SemaphoreTestThread(ISemaphore semaphore, AtomicInteger upTotal, AtomicInteger downTotal) {
             this.semaphore = semaphore;
             this.upTotal = upTotal;
             this.downTotal = downTotal;
         }
 
-        final public void run(){
-            try{
-                for ( int i=0; i<MAX_ITTERATIONS; i++ ) {
+        @Override
+        public final void run() {
+            try {
+                for (int i = 0; i < MAX_ITERATIONS; i++) {
                     iterativelyRun();
                 }
-            }catch (Throwable e){
+            } catch (Throwable e) {
                 error = e;
             }
         }
 
-        abstract void iterativelyRun() throws Exception;
+        protected abstract void iterativelyRun() throws Exception;
 
-        protected void work(){
+        protected void work() {
             final int delta = random.nextInt(1000);
             upTotal.addAndGet(delta);
             downTotal.addAndGet(-delta);
