@@ -17,10 +17,16 @@
 package com.hazelcast.client.topic;
 
 import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.core.*;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.ITopic;
+import com.hazelcast.core.Message;
+import com.hazelcast.core.MessageListener;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.annotation.QuickTest;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
@@ -34,44 +40,44 @@ import static org.junit.Assert.assertTrue;
 @Category(QuickTest.class)
 public class ClientTopicTest {
 
-    static HazelcastInstance client;
-    static HazelcastInstance server;
+    private static HazelcastInstance client;
 
     @BeforeClass
-    public static void init(){
-        server = Hazelcast.newHazelcastInstance();
+    public static void beforeClass() {
+        Hazelcast.newHazelcastInstance();
         client = HazelcastClient.newHazelcastClient(null);
     }
 
     @AfterClass
-    public static void stop(){
+    public static void afterClass() {
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
     }
 
     @Test
-    public void testListener() throws InterruptedException{
-        ITopic topic = client.getTopic(randomString());
+    public void testListener() throws InterruptedException {
+        ITopic<Integer> topic = client.getTopic(randomString());
 
         final CountDownLatch latch = new CountDownLatch(10);
-        MessageListener listener = new MessageListener() {
+        MessageListener<Integer> listener = new MessageListener<Integer>() {
             public void onMessage(Message message) {
                 latch.countDown();
             }
         };
         topic.addMessageListener(listener);
 
-        for (int i=0; i<10; i++){
+        for (int i = 0; i < 10; i++) {
             topic.publish(i);
         }
+
         assertTrue(latch.await(20, TimeUnit.SECONDS));
     }
 
     @Test
     public void testRemoveListener() {
-        ITopic topic = client.getTopic(randomString());
+        ITopic<Integer> topic = client.getTopic(randomString());
 
-        MessageListener listener = new MessageListener() {
+        MessageListener<Integer> listener = new MessageListener<Integer>() {
             public void onMessage(Message message) {
             }
         };
@@ -82,7 +88,7 @@ public class ClientTopicTest {
 
     @Test(expected = UnsupportedOperationException.class)
     public void testGetLocalTopicStats() throws Exception {
-        ITopic topic = client.getTopic(randomString());
+        ITopic<Integer> topic = client.getTopic(randomString());
 
         topic.getLocalTopicStats();
     }
