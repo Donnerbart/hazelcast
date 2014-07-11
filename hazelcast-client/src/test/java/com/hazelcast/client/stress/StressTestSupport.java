@@ -17,52 +17,49 @@ import static com.hazelcast.core.Hazelcast.newHazelcastInstance;
 import static org.junit.Assert.assertNull;
 
 public abstract class StressTestSupport extends HazelcastTestSupport {
-    //todo: should be system property
-    public static final int RUNNING_TIME_SECONDS = 180;
-    //todo: should be system property
-    public static final int CLUSTER_SIZE = 6;
-    //todo: should be system property
-    public static final int KILL_DELAY_SECONDS = 10;
 
-    private final List<HazelcastInstance> instances = new CopyOnWriteArrayList<HazelcastInstance>();
+    // TODO Should be system property
+    private static final int RUNNING_TIME_SECONDS = 180;
+    // TODO Should be system property
+    private static final int CLUSTER_SIZE = 6;
+    // TODO Should be system property
+    private static final int KILL_DELAY_SECONDS = 10;
+
+    private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+
+    private final List<HazelcastInstance> serverInstances = new CopyOnWriteArrayList<HazelcastInstance>();
+
     private CountDownLatch startLatch;
-    private KillMemberThread killMemberThread;
+
+    private volatile boolean clusterChangeEnabled = true;
     private volatile boolean stopOnError = true;
     private volatile boolean stopTest = false;
-    private boolean clusterChangeEnabled = true;
 
     @Before
-    public void setUp() {
+    public void setup() {
         startLatch = new CountDownLatch(1);
+
         for (int k = 0; k < CLUSTER_SIZE; k++) {
-            HazelcastInstance hz = newHazelcastInstance(createClusterConfig());
-            instances.add(hz);
+            HazelcastInstance server = newHazelcastInstance(createClusterConfig());
+            serverInstances.add(server);
         }
-    }
-
-    public void setClusterChangeEnabled(boolean membershutdownEnabled) {
-        this.clusterChangeEnabled = membershutdownEnabled;
-    }
-
-    public Config createClusterConfig() {
-        return new Config();
     }
 
     @After
     public void tearDown() {
-        for (HazelcastInstance hz : instances) {
+        for (HazelcastInstance server : serverInstances) {
             try {
-                hz.shutdown();
+                server.shutdown();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public final boolean startAndWaitForTestCompletion() {
+    protected final boolean startAndWaitForTestCompletion() {
         System.out.println("Cluster change enabled:" + clusterChangeEnabled);
         if (clusterChangeEnabled) {
-            killMemberThread = new KillMemberThread();
+            KillMemberThread killMemberThread = new KillMemberThread();
             killMemberThread.start();
         }
 
@@ -97,25 +94,20 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         return true;
     }
 
-    protected final void setStopOnError(boolean stopOnError) {
-        this.stopOnError = stopOnError;
+    protected void setClusterChangeEnabled(boolean memberShutdownEnabled) {
+        this.clusterChangeEnabled = memberShutdownEnabled;
     }
 
-    protected final void stopTest() {
-        stopTest = true;
+    @SuppressWarnings("unused")
+    protected final void setStopOnError(boolean stopOnError) {
+        this.stopOnError = stopOnError;
     }
 
     protected final boolean isStopped() {
         return stopTest;
     }
 
-    public final void assertNoErrors(TestThread... threads) {
-        for (TestThread thread : threads) {
-            thread.assertNoError();
-        }
-    }
-
-    public final void joinAll(TestThread... threads) {
+    protected final void joinAll(TestThread... threads) {
         for (TestThread t : threads) {
             try {
                 t.join(60000);
@@ -135,13 +127,26 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         assertNoErrors(threads);
     }
 
-    public final static AtomicLong ID_GENERATOR = new AtomicLong(1);
+    private void stopTest() {
+        stopTest = true;
+    }
 
-    public abstract class TestThread extends Thread {
-        private volatile Throwable error;
+    private Config createClusterConfig() {
+        return new Config();
+    }
+
+    private void assertNoErrors(TestThread... threads) {
+        for (TestThread thread : threads) {
+            thread.assertNoError();
+        }
+    }
+
+    protected abstract class TestThread extends Thread {
         protected final Random random = new Random();
 
-        public TestThread() {
+        private volatile Throwable error;
+
+        protected TestThread() {
             setName(getClass().getName() + "" + ID_GENERATOR.getAndIncrement());
         }
 
@@ -159,31 +164,29 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             }
         }
 
-        public final void assertNoError() {
+        protected abstract void doRun() throws Exception;
+
+        private void assertNoError() {
             assertNull(getName() + " encountered an error", error);
         }
-
-        public abstract void doRun() throws Exception;
     }
 
-    public class KillMemberThread extends TestThread {
-
+    private class KillMemberThread extends TestThread {
         @Override
         public void doRun() throws Exception {
             while (!stopTest) {
                 try {
                     Thread.sleep(TimeUnit.SECONDS.toMillis(KILL_DELAY_SECONDS));
-                } catch (InterruptedException e) {
+                } catch (InterruptedException ignored) {
                 }
 
                 int index = random.nextInt(CLUSTER_SIZE);
-                HazelcastInstance instance = instances.remove(index);
+                HazelcastInstance instance = serverInstances.remove(index);
                 instance.shutdown();
 
                 HazelcastInstance newInstance = newHazelcastInstance(createClusterConfig());
-                instances.add(newInstance);
+                serverInstances.add(newInstance);
             }
         }
     }
 }
-

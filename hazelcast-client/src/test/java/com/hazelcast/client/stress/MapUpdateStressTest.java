@@ -8,6 +8,7 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -25,31 +26,32 @@ import static org.junit.Assert.fail;
 @Category(NightlyTest.class)
 public class MapUpdateStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int MAP_SIZE = 100 * 1000;
+    private static final int CLIENT_THREAD_COUNT = 5;
+    private static final int MAP_SIZE = 100000;
 
     private HazelcastInstance client;
     private IMap<Integer, Integer> map;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
         client = HazelcastClient.newHazelcastClient(clientConfig);
+
         map = client.getMap("map");
 
         stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
+        for (int i = 0; i < stressThreads.length; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
     @After
-    public void tearDown() {
+    public void teardown() {
         super.tearDown();
 
         if (client != null) {
@@ -57,36 +59,40 @@ public class MapUpdateStressTest extends StressTestSupport {
         }
     }
 
-    //@Test
+    @Ignore
+    @Test
     public void testChangingCluster() {
-        test(true);
+        runTest(true);
     }
 
     @Test
     public void testFixedCluster() {
-        test(false);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
+    private void runTest(boolean clusterChangeEnabled) {
         setClusterChangeEnabled(clusterChangeEnabled);
+
         fillMap();
+
         startAndWaitForTestCompletion();
         joinAll(stressThreads);
+
         assertNoUpdateFailures();
     }
 
     private void assertNoUpdateFailures() {
         int[] increments = new int[MAP_SIZE];
-        for (StressThread t : stressThreads) {
-            t.addIncrements(increments);
+        for (StressThread thread : stressThreads) {
+            thread.addIncrements(increments);
         }
 
         Set<Integer> failedKeys = new HashSet<Integer>();
-        for (int k = 0; k < MAP_SIZE; k++) {
-            int expectedValue = increments[k];
-            int foundValue = map.get(k);
+        for (int i = 0; i < MAP_SIZE; i++) {
+            int expectedValue = increments[i];
+            int foundValue = map.get(i);
             if (expectedValue != foundValue) {
-                failedKeys.add(k);
+                failedKeys.add(i);
             }
         }
 
@@ -96,11 +102,11 @@ public class MapUpdateStressTest extends StressTestSupport {
 
         int index = 1;
         for (Integer key : failedKeys) {
-            System.err.println("Failed write: " + index + " found:" + map.get(key) + " expected:" + increments[key]);
+            System.err.printf("Failed write: %4d, found: %5d, expected: %5d\n", index, map.get(key), increments[key]);
             index++;
         }
 
-        fail("There are failed writes, number of failures:" + failedKeys.size());
+        fail(String.format("There are %d failed writes...", failedKeys.size()));
     }
 
     private void fillMap() {
@@ -108,10 +114,10 @@ public class MapUpdateStressTest extends StressTestSupport {
         System.out.println("Inserting data in map");
         System.out.println("==================================================================");
 
-        for (int k = 0; k < MAP_SIZE; k++) {
-            map.put(k, 0);
-            if (k % 10000 == 0) {
-                System.out.println("Inserted data: " + k);
+        for (int i = 0; i < MAP_SIZE; i++) {
+            map.put(i, 0);
+            if (i % 10000 == 0) {
+                System.out.println("Inserted data: " + i);
             }
         }
 
@@ -120,8 +126,7 @@ public class MapUpdateStressTest extends StressTestSupport {
         System.out.println("==================================================================");
     }
 
-    public class StressThread extends TestThread {
-
+    private class StressThread extends TestThread {
         private final int[] increments = new int[MAP_SIZE];
 
         @Override
@@ -130,7 +135,7 @@ public class MapUpdateStressTest extends StressTestSupport {
                 int key = random.nextInt(MAP_SIZE);
                 int increment = random.nextInt(10);
                 increments[key] += increment;
-                for (; ; ) {
+                while (true) {
                     int oldValue = map.get(key);
                     if (map.replace(key, oldValue, oldValue + increment)) {
                         break;
@@ -139,9 +144,9 @@ public class MapUpdateStressTest extends StressTestSupport {
             }
         }
 
-        public void addIncrements(int[] increments) {
-            for (int k = 0; k < increments.length; k++) {
-                increments[k] += this.increments[k];
+        private void addIncrements(int[] increments) {
+            for (int i = 0; i < increments.length; i++) {
+                increments[i] += this.increments[i];
             }
         }
     }

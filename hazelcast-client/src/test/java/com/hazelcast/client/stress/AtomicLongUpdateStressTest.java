@@ -9,6 +9,7 @@ import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ProblematicTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -20,35 +21,36 @@ import static org.junit.Assert.fail;
 
 /**
  * This test fails sporadically. It seems to indicate a problem within the core because there is not much logic
- * in the atomicwrapper that can fail (just increment).
+ * in the AtomicWrapper that can fail (just increment).
  */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(NightlyTest.class)
 public class AtomicLongUpdateStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int REFERENCE_COUNT = 10 * 1000;
+    private static final int CLIENT_THREAD_COUNT = 5;
+    private static final int REFERENCE_COUNT = 10000;
 
     private HazelcastInstance client;
     private IAtomicLong[] references;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setRedoOperation(true);
         client = HazelcastClient.newHazelcastClient(clientConfig);
+
         references = new IAtomicLong[REFERENCE_COUNT];
-        for (int k = 0; k < references.length; k++) {
-            references[k] = client.getAtomicLong("atomicreference:" + k);
+        for (int i = 0; i < references.length; i++) {
+            references[i] = client.getAtomicLong("atomicReference:" + i);
         }
 
         stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
+        for (int i = 0; i < stressThreads.length; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
@@ -61,37 +63,39 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
         }
     }
 
-    //@Test
+    @Ignore
+    @Test
     public void testChangingCluster() {
-        test(true);
+        runTest(true);
     }
 
     @Test
     @Category(ProblematicTest.class)
     public void testFixedCluster() {
-        test(false);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
+    private void runTest(boolean clusterChangeEnabled) {
         setClusterChangeEnabled(clusterChangeEnabled);
 
         startAndWaitForTestCompletion();
         joinAll(stressThreads);
+
         assertNoUpdateFailures();
     }
 
     private void assertNoUpdateFailures() {
         int[] increments = new int[REFERENCE_COUNT];
-        for (StressThread t : stressThreads) {
-            t.addIncrements(increments);
+        for (StressThread thread : stressThreads) {
+            thread.addIncrements(increments);
         }
 
         Set<Integer> failedKeys = new HashSet<Integer>();
-        for (int k = 0; k < REFERENCE_COUNT; k++) {
-            long expectedValue = increments[k];
-            long foundValue = references[k].get();
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
+            long expectedValue = increments[i];
+            long foundValue = references[i].get();
             if (expectedValue != foundValue) {
-                failedKeys.add(k);
+                failedKeys.add(i);
             }
         }
 
@@ -101,14 +105,14 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
 
         int index = 1;
         for (Integer key : failedKeys) {
-            System.err.println("Failed write: " + index + " found:" + references[key].get() + " expected:" + increments[key]);
+            System.err.printf("Failed write: %4d, found: %5d, expected: %5d\n", index, references[key].get(), increments[key]);
             index++;
         }
 
-        fail("There are failed writes, number of failures:" + failedKeys.size());
+        fail(String.format("There are %d failed writes...", failedKeys.size()));
     }
 
-    public class StressThread extends TestThread {
+    private class StressThread extends TestThread {
         private final int[] increments = new int[REFERENCE_COUNT];
 
         @Override
@@ -122,7 +126,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
             }
         }
 
-        public void addIncrements(int[] increments) {
+        private void addIncrements(int[] increments) {
             for (int k = 0; k < increments.length; k++) {
                 increments[k] += this.increments[k];
             }

@@ -19,34 +19,35 @@ import static org.junit.Assert.assertEquals;
 @Category(NightlyTest.class)
 public class AtomicLongStableReadStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int REFERENCE_COUNT = 10 * 1000;
+    private static final int CLIENT_THREAD_COUNT = 5;
+    private static final int REFERENCE_COUNT = 10000;
 
     private HazelcastInstance client;
     private IAtomicLong[] references;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
         client = HazelcastClient.newHazelcastClient(clientConfig);
+
         references = new IAtomicLong[REFERENCE_COUNT];
-        for (int k = 0; k < references.length; k++) {
-            references[k] = client.getAtomicLong("atomicreference:" + k);
+        for (int i = 0; i < references.length; i++) {
+            references[i] = client.getAtomicLong("atomicReference:" + i);
         }
 
         stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
+        for (int i = 0; i < stressThreads.length; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
     @After
-    public void tearDown() {
+    public void teardown() {
         super.tearDown();
 
         if (client != null) {
@@ -56,17 +57,19 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
     @Test
     public void testChangingCluster() {
-        test(true);
+        runTest(true);
     }
 
     @Test
     public void testFixedCluster() {
-        test(false);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
+    private void runTest(boolean clusterChangeEnabled) {
         setClusterChangeEnabled(clusterChangeEnabled);
+
         initializeReferences();
+
         startAndWaitForTestCompletion();
         joinAll(stressThreads);
     }
@@ -76,8 +79,8 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
         System.out.println("Initializing references");
         System.out.println("==================================================================");
 
-        for (int k = 0; k < references.length; k++) {
-            references[k].set(k);
+        for (int i = 0; i < references.length; i++) {
+            references[i].set(i);
         }
 
         System.out.println("==================================================================");
@@ -85,8 +88,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
         System.out.println("==================================================================");
     }
 
-    public class StressThread extends TestThread {
-
+    private class StressThread extends TestThread {
         @Override
         public void doRun() throws Exception {
             while (!isStopped()) {

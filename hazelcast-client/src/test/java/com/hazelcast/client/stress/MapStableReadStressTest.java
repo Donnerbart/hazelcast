@@ -8,6 +8,7 @@ import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -24,20 +25,21 @@ import static org.junit.Assert.assertEquals;
 @Category(NightlyTest.class)
 public class MapStableReadStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int MAP_SIZE = 100 * 1000;
+    private static final int CLIENT_THREAD_COUNT = 5;
+    private static final int MAP_SIZE = 100000;
 
     private HazelcastInstance client;
     private IMap<Integer, Integer> map;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
         client = HazelcastClient.newHazelcastClient(clientConfig);
+
         map = client.getMap("map");
 
         stressThreads = new StressThread[CLIENT_THREAD_COUNT];
@@ -56,22 +58,23 @@ public class MapStableReadStressTest extends StressTestSupport {
         }
     }
 
-    //@Test
+    @Ignore
+    @Test
     public void testChangingCluster() {
-        test(true);
+        runTest(true);
     }
 
     @Test
     public void testFixedCluster() {
-        test(false);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
+    private void runTest(boolean clusterChangeEnabled) {
         setClusterChangeEnabled(clusterChangeEnabled);
+
         fillMap();
 
         startAndWaitForTestCompletion();
-
         joinAll(stressThreads);
     }
 
@@ -80,10 +83,10 @@ public class MapStableReadStressTest extends StressTestSupport {
         System.out.println("Inserting data in map");
         System.out.println("==================================================================");
 
-        for (int k = 0; k < MAP_SIZE; k++) {
-            map.put(k, k);
-            if (k % 10000 == 0) {
-                System.out.println("Inserted data: "+k);
+        for (int i = 0; i < MAP_SIZE; i++) {
+            map.put(i, i);
+            if (i % 10000 == 0) {
+                System.out.println("Inserted data: "+i);
             }
         }
 
@@ -92,8 +95,7 @@ public class MapStableReadStressTest extends StressTestSupport {
         System.out.println("==================================================================");
     }
 
-    public class StressThread extends TestThread {
-
+    private class StressThread extends TestThread {
         @Override
         public void doRun() throws Exception {
             while (!isStopped()) {
