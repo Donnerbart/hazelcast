@@ -1,128 +1,116 @@
 package com.hazelcast.client.stress;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.junit.Assert.fail;
 
 /**
- * This test fails sporadically. It seems to indicate a problem within the core because there is not much logic
- * in the atomicwrapper that can fail (just increment).
+ * This tests verifies that changes on an AtomicLong are not lost. So we have a client which is going to do updates on
+ * an AtomicWrapper. In the end we verify that the actual updates in the cluster are the same as the expected updates.
  */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(NightlyTest.class)
 public class AtomicLongUpdateStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int REFERENCE_COUNT = 10 * 1000;
+    private static final int REFERENCE_COUNT = 10000;
 
-    private HazelcastInstance client;
     private IAtomicLong[] references;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
         references = new IAtomicLong[REFERENCE_COUNT];
-        for (int k = 0; k < references.length; k++) {
-            references[k] = client.getAtomicLong("atomicreference:" + k);
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
+            references[i] = client.getAtomicLong("atomicReference" + i);
         }
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
-        }
-    }
-
-    @After
-    public void tearDown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
-    //@Test
+    /**
+     * This test fails constantly. It seems to indicate a problem within the core (probably at fail over/migration),
+     * because there is not much logic in the AtomicWrapper itself and the test with a fixed cluster works.
+     */
+    @Test
+    @Category(NightlyTest.class)
     public void testChangingCluster() {
-        test(true);
+        Assume.assumeTrue(CHANGE_CLUSTER_TESTS_ACTIVE);
+        runTest(true);
     }
 
     @Test
     public void testFixedCluster() {
-        test(false);
+        Assume.assumeTrue(FIXED_CLUSTER_TESTS_ACTIVE);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
-        setClusterChangeEnabled(clusterChangeEnabled);
-
-        startAndWaitForTestCompletion();
+    private void runTest(boolean clusterChangeEnabled) {
+        startAndWaitForTestCompletion(clusterChangeEnabled);
         joinAll(stressThreads);
+
         assertNoUpdateFailures();
     }
 
     private void assertNoUpdateFailures() {
-        int[] increments = new int[REFERENCE_COUNT];
-        for (StressThread t : stressThreads) {
-            t.addIncrements(increments);
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Assert update failures...");
+
+        int[] globalIncrements = new int[REFERENCE_COUNT];
+        for (StressThread thread : stressThreads) {
+            thread.addThreadIncrements(globalIncrements);
         }
 
-        Set<Integer> failedKeys = new HashSet<Integer>();
-        for (int k = 0; k < REFERENCE_COUNT; k++) {
-            long expectedValue = increments[k];
-            long foundValue = references[k].get();
-            if (expectedValue != foundValue) {
-                failedKeys.add(k);
+        int failCount = 0;
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
+            long expectedValue = globalIncrements[i];
+            long actualValue = references[i].get();
+            if (expectedValue != actualValue) {
+                System.err.printf(
+                        "  Failed write #%4d: actual: %5d, expected: %5d, partition key: %s\n",
+                        ++failCount, actualValue, expectedValue, references[i].getPartitionKey()
+                );
             }
         }
 
-        if (failedKeys.isEmpty()) {
-            return;
-        }
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
 
-        int index = 1;
-        for (Integer key : failedKeys) {
-            System.err.println("Failed write: " + index + " found:" + references[key].get() + " expected:" + increments[key]);
-            index++;
+        if (failCount > 0) {
+            fail(String.format("There are %d failed writes...", failCount));
         }
-
-        fail("There are failed writes, number of failures:" + failedKeys.size());
     }
 
-    public class StressThread extends TestThread {
-        private final int[] increments = new int[REFERENCE_COUNT];
+    private class StressThread extends TestThread {
+        private final int[] threadIncrements = new int[REFERENCE_COUNT];
 
         @Override
-        public void doRun() throws Exception {
-            while (!isStopped()) {
-                int index = random.nextInt(REFERENCE_COUNT);
-                int increment = random.nextInt(100);
-                increments[index] += increment;
-                IAtomicLong reference = references[index];
-                reference.addAndGet(increment);
-            }
+        public void runAction() {
+            int index = random.nextInt(REFERENCE_COUNT);
+            int increment = random.nextInt(100);
+
+            threadIncrements[index] += increment;
+
+            IAtomicLong reference = references[index];
+            reference.addAndGet(increment);
         }
 
-        public void addIncrements(int[] increments) {
-            for (int k = 0; k < increments.length; k++) {
-                increments[k] += this.increments[k];
+        private void addThreadIncrements(int[] increments) {
+            for (int i = 0; i < increments.length; i++) {
+                increments[i] += threadIncrements[i];
             }
         }
     }

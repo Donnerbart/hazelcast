@@ -1,12 +1,9 @@
 package com.hazelcast.client.stress;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -24,83 +21,63 @@ import static org.junit.Assert.assertEquals;
 @Category(NightlyTest.class)
 public class MapStableReadStressTest extends StressTestSupport {
 
-    public static final int CLIENT_THREAD_COUNT = 5;
-    public static final int MAP_SIZE = 100 * 1000;
+    private static final int MAP_SIZE = 100000;
 
-    private HazelcastInstance client;
     private IMap<Integer, Integer> map;
     private StressThread[] stressThreads;
 
     @Before
-    public void setUp() {
-        super.setUp();
+    public void setup() {
+        super.setup();
 
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
         map = client.getMap("map");
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
-    @After
-    public void tearDown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
-        }
-    }
-
-    //@Test
+    @Test
     public void testChangingCluster() {
-        test(true);
+        Assume.assumeTrue(CHANGE_CLUSTER_TESTS_ACTIVE);
+        runTest(true);
     }
 
     @Test
     public void testFixedCluster() {
-        test(false);
+        Assume.assumeTrue(FIXED_CLUSTER_TESTS_ACTIVE);
+        runTest(false);
     }
 
-    public void test(boolean clusterChangeEnabled) {
-        setClusterChangeEnabled(clusterChangeEnabled);
+    private void runTest(boolean clusterChangeEnabled) {
         fillMap();
 
-        startAndWaitForTestCompletion();
-
+        startAndWaitForTestCompletion(clusterChangeEnabled);
         joinAll(stressThreads);
     }
 
     private void fillMap() {
+        System.out.println();
         System.out.println("==================================================================");
-        System.out.println("Inserting data in map");
-        System.out.println("==================================================================");
+        System.out.println("  Inserting data in map...");
 
-        for (int k = 0; k < MAP_SIZE; k++) {
-            map.put(k, k);
-            if (k % 10000 == 0) {
-                System.out.println("Inserted data: "+k);
-            }
+        for (int i = 0; i < MAP_SIZE; i++) {
+            map.put(i, i);
         }
 
-        System.out.println("==================================================================");
-        System.out.println("Completed with inserting data in map");
+        System.out.println("  Done!");
         System.out.println("==================================================================");
     }
 
-    public class StressThread extends TestThread {
-
+    private class StressThread extends TestThread {
         @Override
-        public void doRun() throws Exception {
-            while (!isStopped()) {
-                int key = random.nextInt(MAP_SIZE);
-                int value = map.get(key);
-                assertEquals("The value for the key was not consistent", key, value);
-            }
+        public void runAction() {
+            int key = random.nextInt(MAP_SIZE);
+            int value = map.get(key);
+
+            assertEquals(String.format("The value for key %d was not consistent", key), key, value);
         }
     }
 }
