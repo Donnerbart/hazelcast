@@ -46,16 +46,14 @@ public class ClientMapStandaloneTest {
     static HazelcastInstance client;
 
     static {
-        List<String> excludes = Arrays.asList(new String[]{"com.hazelcast.client.standalone.model"});
+        List<String> excludes = Arrays.asList("com.hazelcast.client.standalone.model");
         FILTERING_CLASS_LOADER = new FilteringClassLoader(excludes, "com.hazelcast");
     }
 
     @BeforeClass
-    public static void init()
-            throws Exception {
-
+    public static void beforeClass() throws Exception {
         Thread thread = Thread.currentThread();
-        ClassLoader tccl = thread.getContextClassLoader();
+        ClassLoader threadContextClassLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(FILTERING_CLASS_LOADER);
 
         try {
@@ -70,20 +68,15 @@ public class ClientMapStandaloneTest {
 
             newHazelcastInstance.invoke(hazelcastClazz, config);
         } finally {
-            thread.setContextClassLoader(tccl);
+            thread.setContextClassLoader(threadContextClassLoader);
         }
+
         client = HazelcastClient.newHazelcastClient(null);
     }
 
-    public IMap createMap() {
-        return client.getMap(randomString());
-    }
-
     @AfterClass
-    public static void destroy()
-            throws Exception {
-
-        client.shutdown();
+    public static void afterClass() throws Exception {
+        HazelcastClient.shutdownAll();
 
         Class<?> hazelcastClazz = FILTERING_CLASS_LOADER.loadClass("com.hazelcast.core.Hazelcast");
         Method shutdownAll = hazelcastClazz.getDeclaredMethod("shutdownAll");
@@ -91,35 +84,31 @@ public class ClientMapStandaloneTest {
     }
 
     @Test
-    public void testPut()
-            throws Exception {
-
+    public void testPut() throws Exception {
         MyKey key = new MyKey();
         MyElement element = new MyElement(randomString());
 
         Thread thread = Thread.currentThread();
-        ClassLoader tccl = thread.getContextClassLoader();
+        ClassLoader threadContextClassLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(FILTERING_CLASS_LOADER);
 
         try {
             IMap<MyKey, MyElement> map = createMap();
             map.put(key, element);
         } finally {
-            thread.setContextClassLoader(tccl);
+            thread.setContextClassLoader(threadContextClassLoader);
         }
     }
 
     @Test
-    public void testGet()
-            throws Exception {
-
+    public void testGet() throws Exception {
         IMap<MyKey, MyElement> map = createMap();
 
         MyKey key = new MyKey();
         MyElement element = new MyElement(randomString());
 
         Thread thread = Thread.currentThread();
-        ClassLoader tccl = thread.getContextClassLoader();
+        ClassLoader threadContextClassLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(FILTERING_CLASS_LOADER);
 
         try {
@@ -127,22 +116,19 @@ public class ClientMapStandaloneTest {
             MyElement result = map.get(key);
             assertEquals(element, result);
         } finally {
-            thread.setContextClassLoader(tccl);
+            thread.setContextClassLoader(threadContextClassLoader);
         }
-
     }
 
     @Test
-    public void testRemove()
-            throws Exception {
-
+    public void testRemove() throws Exception {
         IMap<MyKey, MyElement> map = createMap();
 
         MyKey key = new MyKey();
         MyElement element = new MyElement(randomString());
 
         Thread thread = Thread.currentThread();
-        ClassLoader tccl = thread.getContextClassLoader();
+        ClassLoader threadContextClassLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(FILTERING_CLASS_LOADER);
 
         try {
@@ -150,18 +136,16 @@ public class ClientMapStandaloneTest {
             MyElement result = map.remove(key);
             assertEquals(element, result);
         } finally {
-            thread.setContextClassLoader(tccl);
+            thread.setContextClassLoader(threadContextClassLoader);
         }
     }
 
     @Test
-    public void testClear()
-            throws Exception {
-
+    public void testClear() throws Exception {
         IMap<MyKey, MyElement> map = createMap();
 
         Thread thread = Thread.currentThread();
-        ClassLoader tccl = thread.getContextClassLoader();
+        ClassLoader threadContextClassLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(FILTERING_CLASS_LOADER);
 
         try {
@@ -170,7 +154,11 @@ public class ClientMapStandaloneTest {
             map.put(key, element);
             map.clear();
         } finally {
-            thread.setContextClassLoader(tccl);
+            thread.setContextClassLoader(threadContextClassLoader);
         }
+    }
+
+    private IMap<MyKey, MyElement> createMap() {
+        return client.getMap(randomString());
     }
 }

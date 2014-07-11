@@ -18,6 +18,5 @@ package com.hazelcast.client.standalone.model;
 
 import java.io.Serializable;
 
-public class MyKey
-        implements Serializable {
+public class MyKey implements Serializable {
 }

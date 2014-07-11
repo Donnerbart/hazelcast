@@ -18,13 +18,9 @@ package com.hazelcast.client.standalone.model;
 
 import java.io.Serializable;
 
-public class MyElement
-        implements Serializable {
+public class MyElement implements Serializable {
 
     private String value;
-
-    public MyElement() {
-    }
 
     public MyElement(String value) {
         this.value = value;
@@ -48,12 +44,7 @@ public class MyElement
         }
 
         MyElement element = (MyElement) o;
-
-        if (value != null ? !value.equals(element.value) : element.value != null) {
-            return false;
-        }
-
-        return true;
+        return !(value != null ? !value.equals(element.value) : element.value != null);
     }
 
     @Override
