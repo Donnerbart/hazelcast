@@ -93,9 +93,6 @@ public class MapUpdateStressTest extends StressTestSupport {
 
         for (int i = 0; i < MAP_SIZE; i++) {
             map.put(i, 0);
-            if (i % 10000 == 0) {
-                System.out.println("  Inserted data: " + i);
-            }
         }
 
         System.out.println("  Done!");
