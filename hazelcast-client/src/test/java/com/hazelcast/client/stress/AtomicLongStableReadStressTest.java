@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(HazelcastSerialClassRunner.class)
@@ -33,7 +32,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
         references = new IAtomicLong[REFERENCE_COUNT];
         for (int i = 0; i < REFERENCE_COUNT; i++) {
-            references[i] = client.getAtomicLong("atomicReference:" + i);
+            references[i] = client.getAtomicLong("atomicReference" + i);
         }
 
         stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
@@ -81,8 +80,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
             while (!isStopped()) {
                 int key = random.nextInt(REFERENCE_COUNT);
                 IAtomicLong reference = references[key];
-                long value = reference.get();
-                assertEquals(format("The value for atomic reference: %s was not consistent", reference), key, value);
+                assertEquals(String.format("The value for atomic reference %s was not consistent", reference), key, reference.get());
             }
         }
     }

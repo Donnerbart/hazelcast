@@ -73,9 +73,6 @@ public class MapStableReadStressTest extends StressTestSupport {
 
         for (int i = 0; i < MAP_SIZE; i++) {
             map.put(i, i);
-            if (i % 10000 == 0) {
-                System.out.println("  Inserted data: "+i);
-            }
         }
 
         System.out.println("  Done!");
@@ -88,7 +85,7 @@ public class MapStableReadStressTest extends StressTestSupport {
             while (!isStopped()) {
                 int key = random.nextInt(MAP_SIZE);
                 int value = map.get(key);
-                assertEquals("The value for the key was not consistent", key, value);
+                assertEquals(String.format("The value for key %d was not consistent", key), key, value);
             }
         }
     }
