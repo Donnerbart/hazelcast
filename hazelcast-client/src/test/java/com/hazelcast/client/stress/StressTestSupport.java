@@ -170,7 +170,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         public final void run() {
             try {
                 startLatch.await();
-                if (running) {
+                while (running) {
                     runAction();
                 }
             } catch (Throwable t) {
