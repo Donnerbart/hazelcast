@@ -74,7 +74,7 @@ public class MapStableReadStressTest extends StressTestSupport {
 
     private class StressThread extends TestThread {
         @Override
-        public void doRun() throws Exception {
+        public void runAction() {
             int key = random.nextInt(MAP_SIZE);
             int value = map.get(key);
 

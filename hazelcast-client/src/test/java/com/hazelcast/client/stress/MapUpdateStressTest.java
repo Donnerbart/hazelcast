@@ -96,7 +96,7 @@ public class MapUpdateStressTest extends StressTestSupport {
         private final int[] threadIncrements = new int[MAP_SIZE];
 
         @Override
-        public void doRun() throws Exception {
+        public void runAction() {
             int key = random.nextInt(MAP_SIZE);
             int increment = random.nextInt(10);
             threadIncrements[key] += increment;

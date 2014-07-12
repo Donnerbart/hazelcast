@@ -69,7 +69,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
     private class StressThread extends TestThread {
         @Override
-        public void doRun() throws Exception {
+        public void runAction() {
             int key = random.nextInt(REFERENCE_COUNT);
             IAtomicLong reference = references[key];
 

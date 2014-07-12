@@ -171,7 +171,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             try {
                 startLatch.await();
                 if (running) {
-                    doRun();
+                    runAction();
                 }
             } catch (Throwable t) {
                 running = false;
@@ -181,7 +181,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             }
         }
 
-        protected abstract void doRun() throws Exception;
+        protected abstract void runAction();
 
         private void assertNoError() {
             assertNull(getName() + " encountered an error", error);
@@ -190,19 +190,17 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
     private class ChangeClusterThread extends TestThread {
         @Override
-        public void doRun() throws Exception {
-            while (running) {
-                try {
-                    TimeUnit.SECONDS.sleep(CHANGE_CLUSTER_INTERVAL_SECONDS);
-                } catch (InterruptedException ignored) {
-                }
-
-                int index = random.nextInt(SERVER_INSTANCE_COUNT);
-                serverInstances.remove(index).shutdown();
-
-                HazelcastInstance server = newHazelcastInstance(createServerConfig());
-                serverInstances.add(server);
+        public void runAction() {
+            try {
+                TimeUnit.SECONDS.sleep(CHANGE_CLUSTER_INTERVAL_SECONDS);
+            } catch (InterruptedException ignored) {
             }
+
+            int index = random.nextInt(SERVER_INSTANCE_COUNT);
+            serverInstances.remove(index).shutdown();
+
+            HazelcastInstance server = newHazelcastInstance(createServerConfig());
+            serverInstances.add(server);
         }
     }
 }

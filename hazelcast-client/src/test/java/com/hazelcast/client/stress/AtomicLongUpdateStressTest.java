@@ -86,7 +86,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
         private final int[] threadIncrements = new int[REFERENCE_COUNT];
 
         @Override
-        public void doRun() throws Exception {
+        public void runAction() {
             int index = random.nextInt(REFERENCE_COUNT);
             int increment = random.nextInt(100);
             threadIncrements[index] += increment;
