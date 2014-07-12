@@ -30,11 +30,11 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     private static final AtomicLong ID_GENERATOR;
 
     static {
-        CLIENT_INSTANCE_COUNT = Integer.parseInt(System.getProperty("client_instances", "5"));
-        SERVER_INSTANCE_COUNT = Integer.parseInt(System.getProperty("server_instances", "6"));
+        CLIENT_INSTANCE_COUNT = Integer.parseInt(System.getProperty("com.hazelcast.stress.client_instances", "5"));
+        SERVER_INSTANCE_COUNT = Integer.parseInt(System.getProperty("com.hazelcast.stress.server_instances", "6"));
 
-        CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(System.getProperty("change_cluster_interval", "10"));
-        RUNNING_TIME_SECONDS = Integer.parseInt(System.getProperty("running_time", "180"));
+        CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(System.getProperty("com.hazelcast.stress.change_cluster_interval", "10"));
+        RUNNING_TIME_SECONDS = Integer.parseInt(System.getProperty("com.hazelcast.stress.running_time", "180"));
 
         ID_GENERATOR = new AtomicLong(1);
 
