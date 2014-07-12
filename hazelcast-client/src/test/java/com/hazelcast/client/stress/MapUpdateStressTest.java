@@ -49,17 +49,19 @@ public class MapUpdateStressTest extends StressTestSupport {
     }
 
     private void runTest(boolean clusterChangeEnabled) {
-        setClusterChangeEnabled(clusterChangeEnabled);
-
         fillMap();
 
-        startAndWaitForTestCompletion();
+        startAndWaitForTestCompletion(clusterChangeEnabled);
         joinAll(stressThreads);
 
         assertNoUpdateFailures();
     }
 
     private void assertNoUpdateFailures() {
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Assert update failures...");
+
         int[] globalIncrements = new int[MAP_SIZE];
         for (StressThread thread : stressThreads) {
             thread.addThreadIncrements(globalIncrements);
@@ -70,9 +72,12 @@ public class MapUpdateStressTest extends StressTestSupport {
             int expectedValue = globalIncrements[i];
             int actualValue = map.get(i);
             if (expectedValue != actualValue) {
-                System.err.printf("Failed write #%4d: found: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
+                System.err.printf("  Failed write #%4d: found: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
             }
         }
+
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
 
         if (failCount > 0) {
             fail(String.format("There are %d failed writes...", failCount));
@@ -99,6 +104,7 @@ public class MapUpdateStressTest extends StressTestSupport {
         public void runAction() {
             int key = random.nextInt(MAP_SIZE);
             int increment = random.nextInt(10);
+
             threadIncrements[key] += increment;
 
             while (true) {

@@ -48,11 +48,9 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
     }
 
     private void runTest(boolean clusterChangeEnabled) {
-        setClusterChangeEnabled(clusterChangeEnabled);
-
         initializeReferences();
 
-        startAndWaitForTestCompletion();
+        startAndWaitForTestCompletion(clusterChangeEnabled);
         joinAll(stressThreads);
     }
 

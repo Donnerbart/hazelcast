@@ -57,14 +57,12 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println("  Thread join timeout: " + THREAD_JOIN_TIMEOUT + " seconds");
         System.out.println("  Running time: " + RUNNING_TIME_SECONDS + " seconds");
         System.out.println("==================================================================");
-        System.out.println();
     }
 
     protected HazelcastInstance client;
 
     private final List<HazelcastInstance> serverInstances = new CopyOnWriteArrayList<HazelcastInstance>();
 
-    private volatile boolean clusterChangeEnabled = true;
     private volatile boolean running = true;
 
     private CountDownLatch startLatch;
@@ -72,6 +70,9 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
     @Before
     public void setup() {
+        System.out.println("==================================================================");
+        System.out.println("  Hazelcast initialization...");
+
         startLatch = new CountDownLatch(1);
 
         for (int i = 0; i < SERVER_INSTANCE_COUNT; i++) {
@@ -80,19 +81,25 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         }
 
         client = HazelcastClient.newHazelcastClient(createClientConfig());
+
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
     }
 
     @After
     public void tearDown() {
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Hazelcast shutdown...");
+
         HazelcastClient.shutdownAll();
         Hazelcast.shutdownAll();
+
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
     }
 
-    protected void setClusterChangeEnabled(boolean memberShutdownEnabled) {
-        this.clusterChangeEnabled = memberShutdownEnabled;
-    }
-
-    protected final boolean startAndWaitForTestCompletion() {
+    protected final boolean startAndWaitForTestCompletion(boolean clusterChangeEnabled) {
         if (clusterChangeEnabled) {
             changeClusterThread = new ChangeClusterThread();
             changeClusterThread.start();
@@ -115,6 +122,13 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             float percent = (i * 100.0f) / RUNNING_TIME_SECONDS;
             System.out.printf("  %5.1f%% done after running for %3d of %3d seconds\n", percent, i, RUNNING_TIME_SECONDS);
 
+            // Shutdown the cluster changing thread so we have enough time for the cluster to stabilize for the error checks
+            // TODO This still may create a race condition and should be replaced with some smart cluster/rebalancing listeners
+            if (clusterChangeEnabled && percent > 90) {
+                System.out.println("  Interrupting cluster change thread...");
+                changeClusterThread.interrupt();
+            }
+
             if (!running) {
                 System.out.println();
                 System.err.println("==================================================================");
@@ -128,7 +142,6 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println("==================================================================");
         System.out.println("  Done!");
         System.out.println("==================================================================");
-        System.out.println();
 
         running = false;
         return true;
@@ -137,26 +150,27 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     protected final void joinAll(TestThread... threads) {
         System.out.println();
         System.out.println("==================================================================");
-        System.out.println("  Joining " + threads.length + " threads...");
 
-        if (clusterChangeEnabled) {
+        if (changeClusterThread != null) {
+            System.out.println("  Joining cluster change thread...");
             joinThread(changeClusterThread);
         }
 
+        System.out.println("  Joining " + threads.length + " worker threads...");
         for (TestThread thread : threads) {
             joinThread(thread);
         }
 
+        System.out.println("  Checking " + threads.length + " worker threads for errors...");
         assertNoErrors(threads);
 
         System.out.println("  Done!");
         System.out.println("==================================================================");
-        System.out.println();
     }
 
     private void joinThread(Thread thread) {
         try {
-            thread.join(TimeUnit.SECONDS.toMillis(THREAD_JOIN_TIMEOUT));
+            TimeUnit.SECONDS.timedJoin(thread, THREAD_JOIN_TIMEOUT);
         } catch (InterruptedException e) {
             throw new RuntimeException("Interrupted while joining thread: " + thread.getName());
         }
@@ -199,7 +213,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         public final void run() {
             try {
                 startLatch.await();
-                while (running) {
+                while (running && !isInterrupted()) {
                     runAction();
                 }
             } catch (Throwable t) {
@@ -223,14 +237,13 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             try {
                 TimeUnit.SECONDS.sleep(CHANGE_CLUSTER_INTERVAL_SECONDS);
             } catch (InterruptedException ignored) {
+                interrupt();
             }
 
-            if (running) {
+            if (!isInterrupted()) {
                 int index = random.nextInt(SERVER_INSTANCE_COUNT);
                 serverInstances.remove(index).shutdown();
-            }
 
-            if (running) {
                 HazelcastInstance server = newHazelcastInstance(createServerConfig());
                 serverInstances.add(server);
             }

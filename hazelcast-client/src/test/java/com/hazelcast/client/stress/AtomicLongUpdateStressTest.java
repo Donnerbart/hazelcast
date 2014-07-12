@@ -54,15 +54,17 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     }
 
     private void runTest(boolean clusterChangeEnabled) {
-        setClusterChangeEnabled(clusterChangeEnabled);
-
-        startAndWaitForTestCompletion();
+        startAndWaitForTestCompletion(clusterChangeEnabled);
         joinAll(stressThreads);
 
         assertNoUpdateFailures();
     }
 
     private void assertNoUpdateFailures() {
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Assert update failures...");
+
         int[] globalIncrements = new int[REFERENCE_COUNT];
         for (StressThread thread : stressThreads) {
             thread.addThreadIncrements(globalIncrements);
@@ -73,9 +75,13 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
             long expectedValue = globalIncrements[i];
             long actualValue = references[i].get();
             if (expectedValue != actualValue) {
-                System.err.printf("Failed write #%4d: actual: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
+                System.err.printf("  Failed write #%4d: actual: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
             }
         }
+
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
+        System.out.println();
 
         if (failCount > 0) {
             fail(String.format("There are %d failed writes...", failCount));
@@ -89,6 +95,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
         public void runAction() {
             int index = random.nextInt(REFERENCE_COUNT);
             int increment = random.nextInt(100);
+
             threadIncrements[index] += increment;
 
             IAtomicLong reference = references[index];
