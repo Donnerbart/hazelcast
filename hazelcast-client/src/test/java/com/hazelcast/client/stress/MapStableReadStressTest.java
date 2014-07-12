@@ -34,7 +34,7 @@ public class MapStableReadStressTest extends StressTestSupport {
         super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setRedoOperation(true);
+        clientConfig.getNetworkConfig().setRedoOperation(true);
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         map = client.getMap("map");
@@ -46,8 +46,8 @@ public class MapStableReadStressTest extends StressTestSupport {
         }
     }
 
-    @Ignore
     @Test
+    @Ignore
     public void testChangingCluster() {
         runTest(true);
     }

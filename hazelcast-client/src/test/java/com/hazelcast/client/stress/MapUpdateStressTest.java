@@ -12,9 +12,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.junit.Assert.fail;
 
 /**
@@ -35,7 +32,7 @@ public class MapUpdateStressTest extends StressTestSupport {
         super.setup();
 
         ClientConfig clientConfig = new ClientConfig();
-        clientConfig.setRedoOperation(true);
+        clientConfig.getNetworkConfig().setRedoOperation(true);
         HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         map = client.getMap("map");
@@ -47,8 +44,8 @@ public class MapUpdateStressTest extends StressTestSupport {
         }
     }
 
-    @Ignore
     @Test
+    @Ignore
     public void testChangingCluster() {
         runTest(true);
     }
@@ -70,31 +67,23 @@ public class MapUpdateStressTest extends StressTestSupport {
     }
 
     private void assertNoUpdateFailures() {
-        int[] increments = new int[MAP_SIZE];
+        int[] globalIncrements = new int[MAP_SIZE];
         for (StressThread thread : stressThreads) {
-            thread.addIncrements(increments);
+            thread.addThreadIncrements(globalIncrements);
         }
 
-        Set<Integer> failedKeys = new HashSet<Integer>();
+        int failCount = 0;
         for (int i = 0; i < MAP_SIZE; i++) {
-            int expectedValue = increments[i];
-            int foundValue = map.get(i);
-            if (expectedValue != foundValue) {
-                failedKeys.add(i);
+            int expectedValue = globalIncrements[i];
+            int actualValue = map.get(i);
+            if (expectedValue != actualValue) {
+                System.err.printf("Failed write #%4d: found: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
             }
         }
 
-        if (failedKeys.isEmpty()) {
-            return;
+        if (failCount > 0) {
+            fail(String.format("There are %d failed writes...", failCount));
         }
-
-        int index = 1;
-        for (Integer key : failedKeys) {
-            System.err.printf("Failed write: %4d, found: %5d, expected: %5d\n", index, map.get(key), increments[key]);
-            index++;
-        }
-
-        fail(String.format("There are %d failed writes...", failedKeys.size()));
     }
 
     private void fillMap() {
@@ -132,7 +121,7 @@ public class MapUpdateStressTest extends StressTestSupport {
             }
         }
 
-        private void addIncrements(int[] increments) {
+        private void addThreadIncrements(int[] increments) {
             for (int i = 0; i < increments.length; i++) {
                 increments[i] += threadIncrements[i];
             }

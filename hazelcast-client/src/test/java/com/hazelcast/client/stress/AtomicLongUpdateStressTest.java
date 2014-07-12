@@ -13,9 +13,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import static org.junit.Assert.fail;
 
 /**
@@ -41,7 +38,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
 
         references = new IAtomicLong[REFERENCE_COUNT];
         for (int i = 0; i < REFERENCE_COUNT; i++) {
-            references[i] = client.getAtomicLong("atomicReference:" + i);
+            references[i] = client.getAtomicLong("atomicReference" + i);
         }
 
         stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
@@ -51,8 +48,8 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
         }
     }
 
-    @Ignore
     @Test
+    @Ignore
     public void testChangingCluster() {
         runTest(true);
     }
@@ -73,31 +70,23 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     }
 
     private void assertNoUpdateFailures() {
-        int[] increments = new int[REFERENCE_COUNT];
+        int[] globalIncrements = new int[REFERENCE_COUNT];
         for (StressThread thread : stressThreads) {
-            thread.addIncrements(increments);
+            thread.addThreadIncrements(globalIncrements);
         }
 
-        Set<Integer> failedKeys = new HashSet<Integer>();
+        int failCount = 0;
         for (int i = 0; i < REFERENCE_COUNT; i++) {
-            long expectedValue = increments[i];
-            long foundValue = references[i].get();
-            if (expectedValue != foundValue) {
-                failedKeys.add(i);
+            long expectedValue = globalIncrements[i];
+            long actualValue = references[i].get();
+            if (expectedValue != actualValue) {
+                System.err.printf("Failed write #%4d: actual: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
             }
         }
 
-        if (failedKeys.isEmpty()) {
-            return;
+        if (failCount > 0) {
+            fail(String.format("There are %d failed writes...", failCount));
         }
-
-        int index = 1;
-        for (Integer key : failedKeys) {
-            System.err.printf("Failed write: %4d, found: %5d, expected: %5d\n", index, references[key].get(), increments[key]);
-            index++;
-        }
-
-        fail(String.format("There are %d failed writes...", failedKeys.size()));
     }
 
     private class StressThread extends TestThread {
@@ -115,7 +104,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
             }
         }
 
-        private void addIncrements(int[] increments) {
+        private void addThreadIncrements(int[] increments) {
             for (int i = 0; i < increments.length; i++) {
                 increments[i] += threadIncrements[i];
             }
