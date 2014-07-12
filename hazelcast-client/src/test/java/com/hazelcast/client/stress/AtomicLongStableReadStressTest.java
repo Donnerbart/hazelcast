@@ -3,6 +3,7 @@ package com.hazelcast.client.stress;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -37,6 +38,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
     @Test
     public void testChangingCluster() {
+        Assume.assumeTrue(CHANGE_CLUSTER_TESTS_ACTIVE);
         runTest(true);
     }
 

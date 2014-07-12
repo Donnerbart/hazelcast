@@ -4,8 +4,8 @@ import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ProblematicTest;
+import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -42,8 +42,8 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     }
 
     @Test
-    @Ignore
     public void testChangingCluster() {
+        Assume.assumeTrue(CHANGE_CLUSTER_TESTS_ACTIVE);
         runTest(true);
     }
 

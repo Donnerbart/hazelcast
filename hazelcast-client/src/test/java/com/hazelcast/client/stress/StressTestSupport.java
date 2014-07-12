@@ -24,8 +24,11 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     protected static final int CLIENT_INSTANCE_COUNT;
     private static final int SERVER_INSTANCE_COUNT;
 
-    private static final int RUNNING_TIME_SECONDS;
+    protected static final boolean CHANGE_CLUSTER_TESTS_ACTIVE;
     private static final int CHANGE_CLUSTER_INTERVAL_SECONDS;
+
+    private static final int THREAD_JOIN_TIMEOUT;
+    private static final int RUNNING_TIME_SECONDS;
 
     private static final AtomicLong ID_GENERATOR;
 
@@ -33,7 +36,14 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         CLIENT_INSTANCE_COUNT = Integer.parseInt(System.getProperty("com.hazelcast.stress.client_instances", "5"));
         SERVER_INSTANCE_COUNT = Integer.parseInt(System.getProperty("com.hazelcast.stress.server_instances", "6"));
 
-        CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(System.getProperty("com.hazelcast.stress.change_cluster_interval", "10"));
+        CHANGE_CLUSTER_TESTS_ACTIVE = Boolean.parseBoolean(
+                System.getProperty("com.hazelcast.stress.change_cluster.active", "false")
+        );
+        CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(
+                System.getProperty("com.hazelcast.stress.change_cluster.interval", "10")
+        );
+
+        THREAD_JOIN_TIMEOUT = Integer.parseInt(System.getProperty("com.hazelcast.stress.thread_join_timeout", "60"));
         RUNNING_TIME_SECONDS = Integer.parseInt(System.getProperty("com.hazelcast.stress.running_time", "180"));
 
         ID_GENERATOR = new AtomicLong(1);
@@ -42,7 +52,9 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println("  Configuration:");
         System.out.println("  Client instances: " + CLIENT_INSTANCE_COUNT + " nodes");
         System.out.println("  Server instances: " + SERVER_INSTANCE_COUNT + " nodes");
+        System.out.println("  Changing cluster: " + CHANGE_CLUSTER_TESTS_ACTIVE);
         System.out.println("  Changing cluster interval: " + CHANGE_CLUSTER_INTERVAL_SECONDS + " seconds");
+        System.out.println("  Thread join timeout: " + THREAD_JOIN_TIMEOUT + " seconds");
         System.out.println("  Running time: " + RUNNING_TIME_SECONDS + " seconds");
         System.out.println("==================================================================");
         System.out.println();
@@ -56,6 +68,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     private volatile boolean running = true;
 
     private CountDownLatch startLatch;
+    private ChangeClusterThread changeClusterThread;
 
     @Before
     public void setup() {
@@ -81,13 +94,13 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
     protected final boolean startAndWaitForTestCompletion() {
         if (clusterChangeEnabled) {
-            ChangeClusterThread changeClusterThread = new ChangeClusterThread();
+            changeClusterThread = new ChangeClusterThread();
             changeClusterThread.start();
         }
 
         System.out.println();
         System.out.println("==================================================================");
-        System.out.println("  Test started " + (clusterChangeEnabled ? "with" : "without") + " changing cluster...");
+        System.out.println("  Test started with " + (clusterChangeEnabled ? "changing" : "fixed") + " cluster...");
         System.out.println("==================================================================");
         System.out.println();
 
@@ -122,23 +135,45 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     }
 
     protected final void joinAll(TestThread... threads) {
-        for (TestThread thread : threads) {
-            try {
-                thread.join(60000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException("Interrupted while joining thread: " + thread.getName());
-            }
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Joining " + threads.length + " threads...");
 
-            if (thread.isAlive()) {
-                System.err.println("Could not join thread: " + thread.getName() + ", it's still alive");
-                for (StackTraceElement stackTraceElement : thread.getStackTrace()) {
-                    System.err.println("\tat " + stackTraceElement);
-                }
-                throw new RuntimeException("Could not join thread: " + thread.getName() + ", it's still alive");
-            }
+        if (clusterChangeEnabled) {
+            joinThread(changeClusterThread);
+        }
+
+        for (TestThread thread : threads) {
+            joinThread(thread);
         }
 
         assertNoErrors(threads);
+
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
+        System.out.println();
+    }
+
+    private void joinThread(Thread thread) {
+        try {
+            thread.join(TimeUnit.SECONDS.toMillis(THREAD_JOIN_TIMEOUT));
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while joining thread: " + thread.getName());
+        }
+
+        if (thread.isAlive()) {
+            System.err.println("Could not join thread: " + thread.getName() + ", it's still alive");
+            for (StackTraceElement stackTraceElement : thread.getStackTrace()) {
+                System.err.println("\tat " + stackTraceElement);
+            }
+            throw new RuntimeException("Could not join thread: " + thread.getName() + ", it's still alive");
+        }
+    }
+
+    private void assertNoErrors(TestThread... threads) {
+        for (TestThread thread : threads) {
+            thread.assertNoError();
+        }
     }
 
     private Config createServerConfig() {
@@ -149,12 +184,6 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setRedoOperation(true);
         return clientConfig;
-    }
-
-    private void assertNoErrors(TestThread... threads) {
-        for (TestThread thread : threads) {
-            thread.assertNoError();
-        }
     }
 
     protected abstract class TestThread extends Thread {
@@ -196,11 +225,15 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             } catch (InterruptedException ignored) {
             }
 
-            int index = random.nextInt(SERVER_INSTANCE_COUNT);
-            serverInstances.remove(index).shutdown();
+            if (running) {
+                int index = random.nextInt(SERVER_INSTANCE_COUNT);
+                serverInstances.remove(index).shutdown();
+            }
 
-            HazelcastInstance server = newHazelcastInstance(createServerConfig());
-            serverInstances.add(server);
+            if (running) {
+                HazelcastInstance server = newHazelcastInstance(createServerConfig());
+                serverInstances.add(server);
+            }
         }
     }
 }
