@@ -75,11 +75,10 @@ public class MapStableReadStressTest extends StressTestSupport {
     private class StressThread extends TestThread {
         @Override
         public void doRun() throws Exception {
-            while (!isStopped()) {
-                int key = random.nextInt(MAP_SIZE);
-                int value = map.get(key);
-                assertEquals(String.format("The value for key %d was not consistent", key), key, value);
-            }
+            int key = random.nextInt(MAP_SIZE);
+            int value = map.get(key);
+
+            assertEquals(String.format("The value for key %d was not consistent", key), key, value);
         }
     }
 }

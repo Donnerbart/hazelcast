@@ -87,14 +87,12 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
 
         @Override
         public void doRun() throws Exception {
-            while (!isStopped()) {
-                int index = random.nextInt(REFERENCE_COUNT);
-                int increment = random.nextInt(100);
-                threadIncrements[index] += increment;
+            int index = random.nextInt(REFERENCE_COUNT);
+            int increment = random.nextInt(100);
+            threadIncrements[index] += increment;
 
-                IAtomicLong reference = references[index];
-                reference.addAndGet(increment);
-            }
+            IAtomicLong reference = references[index];
+            reference.addAndGet(increment);
         }
 
         private void addThreadIncrements(int[] increments) {

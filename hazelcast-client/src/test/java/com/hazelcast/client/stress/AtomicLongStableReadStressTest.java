@@ -70,11 +70,10 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
     private class StressThread extends TestThread {
         @Override
         public void doRun() throws Exception {
-            while (!isStopped()) {
-                int key = random.nextInt(REFERENCE_COUNT);
-                IAtomicLong reference = references[key];
-                assertEquals(String.format("The value for atomic reference %s was not consistent", reference), key, reference.get());
-            }
+            int key = random.nextInt(REFERENCE_COUNT);
+            IAtomicLong reference = references[key];
+
+            assertEquals(String.format("The value for atomic reference %s was not consistent", reference), key, reference.get());
         }
     }
 }

@@ -53,7 +53,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     private final List<HazelcastInstance> serverInstances = new CopyOnWriteArrayList<HazelcastInstance>();
 
     private volatile boolean clusterChangeEnabled = true;
-    private volatile boolean stopTest = false;
+    private volatile boolean running = true;
 
     private CountDownLatch startLatch;
 
@@ -102,7 +102,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
             float percent = (i * 100.0f) / RUNNING_TIME_SECONDS;
             System.out.printf("  %5.1f%% done after running for %3d of %3d seconds\n", percent, i, RUNNING_TIME_SECONDS);
 
-            if (stopTest) {
+            if (!running) {
                 System.out.println();
                 System.err.println("==================================================================");
                 System.err.println("  Stopped!");
@@ -117,7 +117,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println("==================================================================");
         System.out.println();
 
-        stopTest();
+        running = false;
         return true;
     }
 
@@ -139,14 +139,6 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         }
 
         assertNoErrors(threads);
-    }
-
-    protected final boolean isStopped() {
-        return stopTest;
-    }
-
-    private void stopTest() {
-        stopTest = true;
     }
 
     private Config createServerConfig() {
@@ -178,9 +170,11 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         public final void run() {
             try {
                 startLatch.await();
-                doRun();
+                if (running) {
+                    doRun();
+                }
             } catch (Throwable t) {
-                stopTest();
+                running = false;
 
                 t.printStackTrace();
                 this.error = t;
@@ -197,7 +191,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
     private class ChangeClusterThread extends TestThread {
         @Override
         public void doRun() throws Exception {
-            while (!stopTest) {
+            while (running) {
                 try {
                     TimeUnit.SECONDS.sleep(CHANGE_CLUSTER_INTERVAL_SECONDS);
                 } catch (InterruptedException ignored) {

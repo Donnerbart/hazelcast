@@ -97,16 +97,14 @@ public class MapUpdateStressTest extends StressTestSupport {
 
         @Override
         public void doRun() throws Exception {
-            while (!isStopped()) {
-                int key = random.nextInt(MAP_SIZE);
-                int increment = random.nextInt(10);
-                threadIncrements[key] += increment;
+            int key = random.nextInt(MAP_SIZE);
+            int increment = random.nextInt(10);
+            threadIncrements[key] += increment;
 
-                while (true) {
-                    int oldValue = map.get(key);
-                    if (map.replace(key, oldValue, oldValue + increment)) {
-                        break;
-                    }
+            while (true) {
+                int oldValue = map.get(key);
+                if (map.replace(key, oldValue, oldValue + increment)) {
+                    break;
                 }
             }
         }
