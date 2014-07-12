@@ -1,8 +1,5 @@
 package com.hazelcast.client.stress;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -31,10 +28,6 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     @Before
     public void setup() {
         super.setup();
-
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true);
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         references = new IAtomicLong[REFERENCE_COUNT];
         for (int i = 0; i < REFERENCE_COUNT; i++) {

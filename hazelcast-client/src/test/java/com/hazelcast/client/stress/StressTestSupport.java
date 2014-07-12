@@ -1,6 +1,7 @@
 package com.hazelcast.client.stress;
 
 import com.hazelcast.client.HazelcastClient;
+import com.hazelcast.client.config.ClientConfig;
 import com.hazelcast.config.Config;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
@@ -47,6 +48,8 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println();
     }
 
+    protected HazelcastInstance client;
+
     private final List<HazelcastInstance> serverInstances = new CopyOnWriteArrayList<HazelcastInstance>();
 
     private volatile boolean clusterChangeEnabled = true;
@@ -59,9 +62,11 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         startLatch = new CountDownLatch(1);
 
         for (int i = 0; i < SERVER_INSTANCE_COUNT; i++) {
-            HazelcastInstance server = newHazelcastInstance(createClusterConfig());
+            HazelcastInstance server = newHazelcastInstance(createServerConfig());
             serverInstances.add(server);
         }
+
+        client = HazelcastClient.newHazelcastClient(createClientConfig());
     }
 
     @After
@@ -82,7 +87,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
         System.out.println();
         System.out.println("==================================================================");
-        System.out.println("  Test started " + (clusterChangeEnabled ? "with": "without") + " changing cluster...");
+        System.out.println("  Test started " + (clusterChangeEnabled ? "with" : "without") + " changing cluster...");
         System.out.println("==================================================================");
         System.out.println();
 
@@ -144,8 +149,14 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         stopTest = true;
     }
 
-    private Config createClusterConfig() {
+    private Config createServerConfig() {
         return new Config();
+    }
+
+    private ClientConfig createClientConfig() {
+        ClientConfig clientConfig = new ClientConfig();
+        clientConfig.getNetworkConfig().setRedoOperation(true);
+        return clientConfig;
     }
 
     private void assertNoErrors(TestThread... threads) {
@@ -195,7 +206,8 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
                 int index = random.nextInt(SERVER_INSTANCE_COUNT);
                 serverInstances.remove(index).shutdown();
 
-                serverInstances.add(newHazelcastInstance(createClusterConfig()));
+                HazelcastInstance server = newHazelcastInstance(createServerConfig());
+                serverInstances.add(server);
             }
         }
     }

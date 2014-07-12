@@ -1,8 +1,5 @@
 package com.hazelcast.client.stress;
 
-import com.hazelcast.client.HazelcastClient;
-import com.hazelcast.client.config.ClientConfig;
-import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
@@ -32,10 +29,6 @@ public class MapStableReadStressTest extends StressTestSupport {
     @Before
     public void setup() {
         super.setup();
-
-        ClientConfig clientConfig = new ClientConfig();
-        clientConfig.getNetworkConfig().setRedoOperation(true);
-        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         map = client.getMap("map");
 
