@@ -1,6 +1,8 @@
 package com.hazelcast.client.stress;
 
+import com.hazelcast.client.HazelcastClient;
 import com.hazelcast.config.Config;
+import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.test.HazelcastTestSupport;
 import org.junit.After;
@@ -18,28 +20,45 @@ import static org.junit.Assert.assertNull;
 
 public abstract class StressTestSupport extends HazelcastTestSupport {
 
-    // TODO Should be system property
-    private static final int RUNNING_TIME_SECONDS = 180;
-    // TODO Should be system property
-    private static final int CLUSTER_SIZE = 6;
-    // TODO Should be system property
-    private static final int KILL_DELAY_SECONDS = 10;
+    protected static final int CLIENT_INSTANCE_COUNT;
+    private static final int SERVER_INSTANCE_COUNT;
 
-    private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
+    private static final int RUNNING_TIME_SECONDS;
+    private static final int CHANGE_CLUSTER_INTERVAL_SECONDS;
+
+    private static final AtomicLong ID_GENERATOR;
+
+    static {
+        CLIENT_INSTANCE_COUNT = Integer.parseInt(System.getProperty("client_instances", "5"));
+        SERVER_INSTANCE_COUNT = Integer.parseInt(System.getProperty("server_instances", "6"));
+
+        CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(System.getProperty("change_cluster_interval", "10"));
+        RUNNING_TIME_SECONDS = Integer.parseInt(System.getProperty("running_time", "180"));
+
+        ID_GENERATOR = new AtomicLong(1);
+
+        System.out.println("==================================================================");
+        System.out.println("  Configuration:");
+        System.out.println("  Client instances: " + CLIENT_INSTANCE_COUNT + " nodes");
+        System.out.println("  Server instances: " + SERVER_INSTANCE_COUNT + " nodes");
+        System.out.println("  Changing cluster interval: " + CHANGE_CLUSTER_INTERVAL_SECONDS + " seconds");
+        System.out.println("  Running time: " + RUNNING_TIME_SECONDS + " seconds");
+        System.out.println("==================================================================");
+        System.out.println();
+    }
 
     private final List<HazelcastInstance> serverInstances = new CopyOnWriteArrayList<HazelcastInstance>();
 
-    private CountDownLatch startLatch;
-
     private volatile boolean clusterChangeEnabled = true;
-    private volatile boolean stopOnError = true;
     private volatile boolean stopTest = false;
+
+    private CountDownLatch startLatch;
 
     @Before
     public void setup() {
         startLatch = new CountDownLatch(1);
 
-        for (int k = 0; k < CLUSTER_SIZE; k++) {
+        for (int i = 0; i < SERVER_INSTANCE_COUNT; i++) {
             HazelcastInstance server = newHazelcastInstance(createClusterConfig());
             serverInstances.add(server);
         }
@@ -47,84 +66,78 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
     @After
     public void tearDown() {
-        for (HazelcastInstance server : serverInstances) {
-            try {
-                server.shutdown();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    protected final boolean startAndWaitForTestCompletion() {
-        System.out.println("Cluster change enabled:" + clusterChangeEnabled);
-        if (clusterChangeEnabled) {
-            KillMemberThread killMemberThread = new KillMemberThread();
-            killMemberThread.start();
-        }
-
-        System.out.println("==================================================================");
-        System.out.println("Test started.");
-        System.out.println("==================================================================");
-
-        startLatch.countDown();
-
-        for (int k = 1; k <= RUNNING_TIME_SECONDS; k++) {
-            try {
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            float percent = (k * 100.0f) / RUNNING_TIME_SECONDS;
-            System.out.printf("%.1f Running for %s of %s seconds\n", percent, k, RUNNING_TIME_SECONDS);
-
-            if (stopTest) {
-                System.err.println("==================================================================");
-                System.err.println("Test ended premature!");
-                System.err.println("==================================================================");
-                return false;
-            }
-        }
-
-        System.out.println("==================================================================");
-        System.out.println("Test completed.");
-        System.out.println("==================================================================");
-
-        stopTest();
-        return true;
+        HazelcastClient.shutdownAll();
+        Hazelcast.shutdownAll();
     }
 
     protected void setClusterChangeEnabled(boolean memberShutdownEnabled) {
         this.clusterChangeEnabled = memberShutdownEnabled;
     }
 
-    @SuppressWarnings("unused")
-    protected final void setStopOnError(boolean stopOnError) {
-        this.stopOnError = stopOnError;
-    }
+    protected final boolean startAndWaitForTestCompletion() {
+        if (clusterChangeEnabled) {
+            ChangeClusterThread changeClusterThread = new ChangeClusterThread();
+            changeClusterThread.start();
+        }
 
-    protected final boolean isStopped() {
-        return stopTest;
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Test started " + (clusterChangeEnabled ? "with": "without") + " changing cluster...");
+        System.out.println("==================================================================");
+        System.out.println();
+
+        startLatch.countDown();
+
+        for (int i = 1; i <= RUNNING_TIME_SECONDS; i++) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            float percent = (i * 100.0f) / RUNNING_TIME_SECONDS;
+            System.out.printf("  %5.1f%% done after running for %3d of %3d seconds\n", percent, i, RUNNING_TIME_SECONDS);
+
+            if (stopTest) {
+                System.out.println();
+                System.err.println("==================================================================");
+                System.err.println("  Stopped!");
+                System.err.println("==================================================================");
+                return false;
+            }
+        }
+
+        System.out.println();
+        System.out.println("==================================================================");
+        System.out.println("  Done!");
+        System.out.println("==================================================================");
+        System.out.println();
+
+        stopTest();
+        return true;
     }
 
     protected final void joinAll(TestThread... threads) {
-        for (TestThread t : threads) {
+        for (TestThread thread : threads) {
             try {
-                t.join(60000);
+                thread.join(60000);
             } catch (InterruptedException e) {
-                throw new RuntimeException("Interrupted while joining thread:" + t);
+                throw new RuntimeException("Interrupted while joining thread: " + thread.getName());
             }
 
-            if (t.isAlive()) {
-                System.err.println("Could not join Thread:" + t.getName() + ", it is still alive");
-                for (StackTraceElement e : t.getStackTrace()) {
-                    System.err.println("\tat " + e);
+            if (thread.isAlive()) {
+                System.err.println("Could not join thread: " + thread.getName() + ", it's still alive");
+                for (StackTraceElement stackTraceElement : thread.getStackTrace()) {
+                    System.err.println("\tat " + stackTraceElement);
                 }
-                throw new RuntimeException("Could not join thread:" + t + ", thread is still alive");
+                throw new RuntimeException("Could not join thread: " + thread.getName() + ", it's still alive");
             }
         }
 
         assertNoErrors(threads);
+    }
+
+    protected final boolean isStopped() {
+        return stopTest;
     }
 
     private void stopTest() {
@@ -147,7 +160,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         private volatile Throwable error;
 
         protected TestThread() {
-            setName(getClass().getName() + "" + ID_GENERATOR.getAndIncrement());
+            setName(getClass().getName() + ID_GENERATOR.getAndIncrement());
         }
 
         @Override
@@ -156,9 +169,8 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
                 startLatch.await();
                 doRun();
             } catch (Throwable t) {
-                if (stopOnError) {
-                    stopTest();
-                }
+                stopTest();
+
                 t.printStackTrace();
                 this.error = t;
             }
@@ -171,21 +183,19 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         }
     }
 
-    private class KillMemberThread extends TestThread {
+    private class ChangeClusterThread extends TestThread {
         @Override
         public void doRun() throws Exception {
             while (!stopTest) {
                 try {
-                    Thread.sleep(TimeUnit.SECONDS.toMillis(KILL_DELAY_SECONDS));
+                    TimeUnit.SECONDS.sleep(CHANGE_CLUSTER_INTERVAL_SECONDS);
                 } catch (InterruptedException ignored) {
                 }
 
-                int index = random.nextInt(CLUSTER_SIZE);
-                HazelcastInstance instance = serverInstances.remove(index);
-                instance.shutdown();
+                int index = random.nextInt(SERVER_INSTANCE_COUNT);
+                serverInstances.remove(index).shutdown();
 
-                HazelcastInstance newInstance = newHazelcastInstance(createClusterConfig());
-                serverInstances.add(newInstance);
+                serverInstances.add(newHazelcastInstance(createClusterConfig()));
             }
         }
     }

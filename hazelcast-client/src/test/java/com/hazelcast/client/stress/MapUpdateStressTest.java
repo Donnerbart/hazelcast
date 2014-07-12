@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -26,10 +25,8 @@ import static org.junit.Assert.fail;
 @Category(NightlyTest.class)
 public class MapUpdateStressTest extends StressTestSupport {
 
-    private static final int CLIENT_THREAD_COUNT = 5;
     private static final int MAP_SIZE = 100000;
 
-    private HazelcastInstance client;
     private IMap<Integer, Integer> map;
     private StressThread[] stressThreads;
 
@@ -39,23 +36,14 @@ public class MapUpdateStressTest extends StressTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         map = client.getMap("map");
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int i = 0; i < stressThreads.length; i++) {
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
             stressThreads[i] = new StressThread();
             stressThreads[i].start();
-        }
-    }
-
-    @After
-    public void teardown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
         }
     }
 
@@ -110,31 +98,31 @@ public class MapUpdateStressTest extends StressTestSupport {
     }
 
     private void fillMap() {
+        System.out.println();
         System.out.println("==================================================================");
-        System.out.println("Inserting data in map");
-        System.out.println("==================================================================");
+        System.out.println("  Inserting data in map...");
 
         for (int i = 0; i < MAP_SIZE; i++) {
             map.put(i, 0);
             if (i % 10000 == 0) {
-                System.out.println("Inserted data: " + i);
+                System.out.println("  Inserted data: " + i);
             }
         }
 
-        System.out.println("==================================================================");
-        System.out.println("Completed with inserting data in map");
+        System.out.println("  Done!");
         System.out.println("==================================================================");
     }
 
     private class StressThread extends TestThread {
-        private final int[] increments = new int[MAP_SIZE];
+        private final int[] threadIncrements = new int[MAP_SIZE];
 
         @Override
         public void doRun() throws Exception {
             while (!isStopped()) {
                 int key = random.nextInt(MAP_SIZE);
                 int increment = random.nextInt(10);
-                increments[key] += increment;
+                threadIncrements[key] += increment;
+
                 while (true) {
                     int oldValue = map.get(key);
                     if (map.replace(key, oldValue, oldValue + increment)) {
@@ -146,7 +134,7 @@ public class MapUpdateStressTest extends StressTestSupport {
 
         private void addIncrements(int[] increments) {
             for (int i = 0; i < increments.length; i++) {
-                increments[i] += this.increments[i];
+                increments[i] += threadIncrements[i];
             }
         }
     }

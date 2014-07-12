@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -25,10 +24,8 @@ import static org.junit.Assert.assertEquals;
 @Category(NightlyTest.class)
 public class MapStableReadStressTest extends StressTestSupport {
 
-    private static final int CLIENT_THREAD_COUNT = 5;
     private static final int MAP_SIZE = 100000;
 
-    private HazelcastInstance client;
     private IMap<Integer, Integer> map;
     private StressThread[] stressThreads;
 
@@ -38,23 +35,14 @@ public class MapStableReadStressTest extends StressTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         map = client.getMap("map");
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int k = 0; k < stressThreads.length; k++) {
-            stressThreads[k] = new StressThread();
-            stressThreads[k].start();
-        }
-    }
-
-    @After
-    public void tearDown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
+            stressThreads[i] = new StressThread();
+            stressThreads[i].start();
         }
     }
 
@@ -79,19 +67,18 @@ public class MapStableReadStressTest extends StressTestSupport {
     }
 
     private void fillMap() {
+        System.out.println();
         System.out.println("==================================================================");
-        System.out.println("Inserting data in map");
-        System.out.println("==================================================================");
+        System.out.println("  Inserting data in map...");
 
         for (int i = 0; i < MAP_SIZE; i++) {
             map.put(i, i);
             if (i % 10000 == 0) {
-                System.out.println("Inserted data: "+i);
+                System.out.println("  Inserted data: "+i);
             }
         }
 
-        System.out.println("==================================================================");
-        System.out.println("Completed with inserting data in map");
+        System.out.println("  Done!");
         System.out.println("==================================================================");
     }
 

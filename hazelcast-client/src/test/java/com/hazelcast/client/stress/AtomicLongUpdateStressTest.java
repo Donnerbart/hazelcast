@@ -7,7 +7,6 @@ import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
 import com.hazelcast.test.annotation.ProblematicTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -27,10 +26,8 @@ import static org.junit.Assert.fail;
 @Category(NightlyTest.class)
 public class AtomicLongUpdateStressTest extends StressTestSupport {
 
-    private static final int CLIENT_THREAD_COUNT = 5;
     private static final int REFERENCE_COUNT = 10000;
 
-    private HazelcastInstance client;
     private IAtomicLong[] references;
     private StressThread[] stressThreads;
 
@@ -40,26 +37,17 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.getNetworkConfig().setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         references = new IAtomicLong[REFERENCE_COUNT];
-        for (int i = 0; i < references.length; i++) {
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
             references[i] = client.getAtomicLong("atomicReference:" + i);
         }
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int i = 0; i < stressThreads.length; i++) {
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
             stressThreads[i] = new StressThread();
             stressThreads[i].start();
-        }
-    }
-
-    @After
-    public void tearDown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
         }
     }
 
@@ -113,22 +101,23 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     }
 
     private class StressThread extends TestThread {
-        private final int[] increments = new int[REFERENCE_COUNT];
+        private final int[] threadIncrements = new int[REFERENCE_COUNT];
 
         @Override
         public void doRun() throws Exception {
             while (!isStopped()) {
                 int index = random.nextInt(REFERENCE_COUNT);
                 int increment = random.nextInt(100);
-                increments[index] += increment;
+                threadIncrements[index] += increment;
+
                 IAtomicLong reference = references[index];
                 reference.addAndGet(increment);
             }
         }
 
         private void addIncrements(int[] increments) {
-            for (int k = 0; k < increments.length; k++) {
-                increments[k] += this.increments[k];
+            for (int i = 0; i < increments.length; i++) {
+                increments[i] += threadIncrements[i];
             }
         }
     }

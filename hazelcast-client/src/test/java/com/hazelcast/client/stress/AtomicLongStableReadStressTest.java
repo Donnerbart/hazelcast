@@ -6,7 +6,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IAtomicLong;
 import com.hazelcast.test.HazelcastSerialClassRunner;
 import com.hazelcast.test.annotation.NightlyTest;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -19,10 +18,8 @@ import static org.junit.Assert.assertEquals;
 @Category(NightlyTest.class)
 public class AtomicLongStableReadStressTest extends StressTestSupport {
 
-    private static final int CLIENT_THREAD_COUNT = 5;
     private static final int REFERENCE_COUNT = 10000;
 
-    private HazelcastInstance client;
     private IAtomicLong[] references;
     private StressThread[] stressThreads;
 
@@ -32,26 +29,17 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
         ClientConfig clientConfig = new ClientConfig();
         clientConfig.setRedoOperation(true);
-        client = HazelcastClient.newHazelcastClient(clientConfig);
+        HazelcastInstance client = HazelcastClient.newHazelcastClient(clientConfig);
 
         references = new IAtomicLong[REFERENCE_COUNT];
-        for (int i = 0; i < references.length; i++) {
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
             references[i] = client.getAtomicLong("atomicReference:" + i);
         }
 
-        stressThreads = new StressThread[CLIENT_THREAD_COUNT];
-        for (int i = 0; i < stressThreads.length; i++) {
+        stressThreads = new StressThread[CLIENT_INSTANCE_COUNT];
+        for (int i = 0; i < CLIENT_INSTANCE_COUNT; i++) {
             stressThreads[i] = new StressThread();
             stressThreads[i].start();
-        }
-    }
-
-    @After
-    public void teardown() {
-        super.tearDown();
-
-        if (client != null) {
-            client.shutdown();
         }
     }
 
@@ -75,16 +63,15 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
     }
 
     private void initializeReferences() {
+        System.out.println();
         System.out.println("==================================================================");
-        System.out.println("Initializing references");
-        System.out.println("==================================================================");
+        System.out.println("  Initializing references...");
 
-        for (int i = 0; i < references.length; i++) {
+        for (int i = 0; i < REFERENCE_COUNT; i++) {
             references[i].set(i);
         }
 
-        System.out.println("==================================================================");
-        System.out.println("Completed with initializing references");
+        System.out.println("  Done!");
         System.out.println("==================================================================");
     }
 
