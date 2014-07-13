@@ -113,6 +113,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
         startLatch.countDown();
 
+        boolean changeClusterThreadInterrupted = false;
         for (int i = 1; i <= RUNNING_TIME_SECONDS; i++) {
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -124,15 +125,16 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
             // Shutdown the cluster changing thread so we have enough time for the cluster to stabilize for the error checks
             // TODO This still may create a race condition and should be replaced with some smart cluster/rebalancing listeners
-            if (clusterChangeEnabled && percent > 90) {
+            if (clusterChangeEnabled && !changeClusterThreadInterrupted && percent > 90) {
                 System.out.println("  Interrupting cluster change thread...");
                 changeClusterThread.interrupt();
+                changeClusterThreadInterrupted = true;
             }
 
             if (!running) {
                 System.out.println();
                 System.err.println("==================================================================");
-                System.err.println("  Stopped!");
+                System.err.println("  Test stopped!");
                 System.err.println("==================================================================");
                 return false;
             }
@@ -140,7 +142,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
         System.out.println();
         System.out.println("==================================================================");
-        System.out.println("  Done!");
+        System.out.println("  Test done!");
         System.out.println("==================================================================");
 
         running = false;
