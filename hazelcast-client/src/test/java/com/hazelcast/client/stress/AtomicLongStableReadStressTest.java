@@ -44,6 +44,7 @@ public class AtomicLongStableReadStressTest extends StressTestSupport {
 
     @Test
     public void testFixedCluster() {
+        Assume.assumeTrue(FIXED_CLUSTER_TESTS_ACTIVE);
         runTest(false);
     }
 

@@ -50,6 +50,7 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     @Test
     @Category(ProblematicTest.class)
     public void testFixedCluster() {
+        Assume.assumeTrue(FIXED_CLUSTER_TESTS_ACTIVE);
         runTest(false);
     }
 
@@ -75,13 +76,15 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
             long expectedValue = globalIncrements[i];
             long actualValue = references[i].get();
             if (expectedValue != actualValue) {
-                System.err.printf("  Failed write #%4d: actual: %5d, expected: %5d\n", ++failCount, actualValue, expectedValue);
+                System.err.printf(
+                        "  Failed write #%4d: actual: %5d, expected: %5d, partition key: %s\n",
+                        ++failCount, actualValue, expectedValue, references[i].getPartitionKey()
+                );
             }
         }
 
         System.out.println("  Done!");
         System.out.println("==================================================================");
-        System.out.println();
 
         if (failCount > 0) {
             fail(String.format("There are %d failed writes...", failCount));
