@@ -39,6 +39,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
     protected static final boolean FIXED_CLUSTER_TESTS_ACTIVE;
     protected static final boolean CHANGE_CLUSTER_TESTS_ACTIVE;
+    private static final boolean CHANGE_CLUSTER_REMOVE_BEFORE_ADD;
     private static final int CHANGE_CLUSTER_INTERVAL_SECONDS;
 
     private static final int THREAD_JOIN_TIMEOUT;
@@ -53,6 +54,9 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         );
         CHANGE_CLUSTER_TESTS_ACTIVE = Boolean.parseBoolean(
                 System.getProperty("com.hazelcast.stress.change_cluster.active", "false")
+        );
+        CHANGE_CLUSTER_REMOVE_BEFORE_ADD = Boolean.parseBoolean(
+                System.getProperty("com.hazelcast.stress.change_cluster.remove_before_add", "true")
         );
         CHANGE_CLUSTER_INTERVAL_SECONDS = Integer.parseInt(
                 System.getProperty("com.hazelcast.stress.change_cluster.interval", "10")
@@ -72,6 +76,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         System.out.println("  Run fixed cluster tests: " + FIXED_CLUSTER_TESTS_ACTIVE);
         System.out.println("  Run changing cluster tests: " + CHANGE_CLUSTER_TESTS_ACTIVE);
         if (CHANGE_CLUSTER_TESTS_ACTIVE) {
+            System.out.println("  Changing cluster remove before add: " + CHANGE_CLUSTER_REMOVE_BEFORE_ADD);
             System.out.println("  Changing cluster interval: " + CHANGE_CLUSTER_INTERVAL_SECONDS + " seconds");
         }
         System.out.println("  Thread join timeout: " + THREAD_JOIN_TIMEOUT + " seconds");
@@ -308,14 +313,26 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
         @Override
         public void runAction() {
+            if (CHANGE_CLUSTER_REMOVE_BEFORE_ADD) {
+                removeServer();
+                addServer();
+            } else {
+                addServer();
+                removeServer();
+            }
+
+            sleep();
+        }
+
+        private void removeServer() {
+            int index = random.nextInt(SERVER_INSTANCE_COUNT);
+            serverInstances.remove(index).shutdown();
+        }
+
+        private void addServer() {
             HazelcastInstance server = Hazelcast.newHazelcastInstance(createServerConfig());
             server.getPartitionService().addMigrationListener(new StressTestMigrationListener());
             serverInstances.add(server);
-
-            int index = random.nextInt(SERVER_INSTANCE_COUNT);
-            serverInstances.remove(index).shutdown();
-
-            sleep();
         }
 
         private void sleep() {
