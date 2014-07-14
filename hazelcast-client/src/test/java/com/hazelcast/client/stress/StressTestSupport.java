@@ -53,7 +53,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
                 System.getProperty("com.hazelcast.stress.fixed_cluster.active", "true")
         );
         CHANGE_CLUSTER_TESTS_ACTIVE = Boolean.parseBoolean(
-                System.getProperty("com.hazelcast.stress.change_cluster.active", "false")
+                System.getProperty("com.hazelcast.stress.change_cluster.active", "true")
         );
         CHANGE_CLUSTER_REMOVE_BEFORE_ADD = Boolean.parseBoolean(
                 System.getProperty("com.hazelcast.stress.change_cluster.remove_before_add", "true")
@@ -65,7 +65,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
         THREAD_JOIN_TIMEOUT = Integer.parseInt(System.getProperty("com.hazelcast.stress.thread_join_timeout", "60"));
         RUNNING_TIME_SECONDS = Integer.parseInt(System.getProperty("com.hazelcast.stress.running_time", "180"));
 
-        String levelString = System.getProperty("com.hazelcast.stress.log_level", "INFO");
+        String levelString = System.getProperty("com.hazelcast.stress.log_level", "WARN");
         setLogLevel(levelString);
 
         System.out.println("==================================================================");
