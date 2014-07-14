@@ -13,8 +13,8 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.fail;
 
 /**
- * This tests verifies that map updates are not lost. So we have a client which is going to do updates on a map
- * and in the end we verify that the actual updates in the map, are the same as the expected updates.
+ * This tests verifies that map updates are not lost. So we have a client which is going to do updates on a map.
+ * In the end we verify that the actual updates in the map are the same as the expected updates.
  */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(NightlyTest.class)
@@ -39,7 +39,8 @@ public class MapUpdateStressTest extends StressTestSupport {
     }
 
     /**
-     * This test fails constantly. It seems to indicate a problem within the core.
+     * This test fails constantly. It seems to indicate a problem within the core (probably at fail over/migration),
+     * because there is not much logic in the map itself and the test with a fixed cluster works.
      */
     @Test
     @Category(ProblematicTest.class)

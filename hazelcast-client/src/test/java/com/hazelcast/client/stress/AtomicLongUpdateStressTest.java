@@ -12,6 +12,10 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.fail;
 
+/**
+ * This tests verifies that changes on an AtomicLong are not lost. So we have a client which is going to do updates on
+ * an AtomicWrapper. In the end we verify that the actual updates in the cluster are the same as the expected updates.
+ */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(NightlyTest.class)
 public class AtomicLongUpdateStressTest extends StressTestSupport {
@@ -38,8 +42,8 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
     }
 
     /**
-     * This test fails constantly. It seems to indicate a problem within the core because there is not much logic
-     * in the AtomicWrapper that can fail (just an addAndGet operation).
+     * This test fails constantly. It seems to indicate a problem within the core (probably at fail over/migration),
+     * because there is not much logic in the AtomicWrapper itself and the test with a fixed cluster works.
      */
     @Test
     @Category(ProblematicTest.class)
