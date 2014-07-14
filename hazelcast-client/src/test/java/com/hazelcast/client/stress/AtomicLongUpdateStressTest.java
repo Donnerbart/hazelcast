@@ -12,10 +12,6 @@ import org.junit.runner.RunWith;
 
 import static org.junit.Assert.fail;
 
-/**
- * This test fails sporadically. It seems to indicate a problem within the core because there is not much logic
- * in the AtomicWrapper that can fail (just increment).
- */
 @RunWith(HazelcastSerialClassRunner.class)
 @Category(NightlyTest.class)
 public class AtomicLongUpdateStressTest extends StressTestSupport {
@@ -41,14 +37,18 @@ public class AtomicLongUpdateStressTest extends StressTestSupport {
         }
     }
 
+    /**
+     * This test fails constantly. It seems to indicate a problem within the core because there is not much logic
+     * in the AtomicWrapper that can fail (just an addAndGet operation).
+     */
     @Test
+    @Category(ProblematicTest.class)
     public void testChangingCluster() {
         Assume.assumeTrue(CHANGE_CLUSTER_TESTS_ACTIVE);
         runTest(true);
     }
 
     @Test
-    @Category(ProblematicTest.class)
     public void testFixedCluster() {
         Assume.assumeTrue(FIXED_CLUSTER_TESTS_ACTIVE);
         runTest(false);

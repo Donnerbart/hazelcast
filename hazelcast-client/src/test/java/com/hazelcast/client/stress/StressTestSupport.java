@@ -281,6 +281,7 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
                     runAction();
                 }
             } catch (InterruptedException ignored) {
+                System.out.println("  Thread " + getName() + " got interrupted!");
             } catch (Throwable t) {
                 running = false;
 
@@ -307,12 +308,12 @@ public abstract class StressTestSupport extends HazelcastTestSupport {
 
         @Override
         public void runAction() {
-            int index = random.nextInt(SERVER_INSTANCE_COUNT);
-            serverInstances.remove(index).shutdown();
-
             HazelcastInstance server = Hazelcast.newHazelcastInstance(createServerConfig());
             server.getPartitionService().addMigrationListener(new StressTestMigrationListener());
             serverInstances.add(server);
+
+            int index = random.nextInt(SERVER_INSTANCE_COUNT);
+            serverInstances.remove(index).shutdown();
 
             sleep();
         }
