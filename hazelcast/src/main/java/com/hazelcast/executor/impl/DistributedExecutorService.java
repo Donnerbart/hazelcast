@@ -16,6 +16,8 @@
 
 package com.hazelcast.executor.impl;
 
+import com.hazelcast.core.AsyncCallable;
+import com.hazelcast.core.AsyncCallableCallback;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.monitor.impl.LocalExecutorStatsImpl;
 import com.hazelcast.nio.Address;
@@ -159,14 +161,15 @@ public class DistributedExecutorService implements ManagedService, RemoteService
         return submittedTasks.containsKey(uuid);
     }
 
-    private final class CallableProcessor extends FutureTask implements Runnable {
+    private final class CallableProcessor extends FutureTask implements Runnable, AsyncCallableCallback<Object> {
         //is being used through the RESPONSE_FLAG_FIELD_UPDATER. Can't be private due to reflection constraint.
         volatile Boolean responseFlag = Boolean.FALSE;
 
         private final String name;
         private final String uuid;
-        private final ResponseHandler responseHandler;
         private final String callableToString;
+        private final ResponseHandler responseHandler;
+        private final Callable callable;
         private final long creationTime = Clock.currentTimeMillis();
 
         private CallableProcessor(String name, String uuid, Callable callable, ResponseHandler responseHandler) {
@@ -176,30 +179,48 @@ public class DistributedExecutorService implements ManagedService, RemoteService
             this.uuid = uuid;
             this.callableToString = String.valueOf(callable);
             this.responseHandler = responseHandler;
+            this.callable = callable;
         }
 
         @Override
         public void run() {
             long start = Clock.currentTimeMillis();
             startExecution(name, start - creationTime);
+            boolean isAsyncCallable = (callable instanceof AsyncCallable);
             Object result = null;
             try {
+                if (isAsyncCallable) {
+                    ((AsyncCallable<Object>) callable).setCallback(this);
+                }
                 super.run();
-                if (!isCancelled()) {
+                if (!isCancelled() && !isAsyncCallable) {
                     result = get();
                 }
             } catch (Exception e) {
                 logException(e);
                 result = e;
             } finally {
-                if (uuid != null) {
-                    submittedTasks.remove(uuid);
+                if (!isAsyncCallable) {
+                    if (uuid != null) {
+                        submittedTasks.remove(uuid);
+                    }
+                    sendResponse(result);
                 }
-                sendResponse(result);
                 if (!isCancelled()) {
                     finishExecution(name, Clock.currentTimeMillis() - start);
                 }
             }
+        }
+
+        @Override
+        public void setResult(Object result) {
+            if (result instanceof Exception) {
+                logException((Exception) result);
+            }
+            if (uuid != null) {
+                submittedTasks.remove(uuid);
+            }
+            sendResponse(result);
         }
 
         private void logException(Exception e) {
