@@ -16,86 +16,44 @@
 
 package com.hazelcast.map.impl.client;
 
-import com.hazelcast.client.impl.client.AllPartitionsClientRequest;
-import com.hazelcast.client.impl.client.RetryableRequest;
-import com.hazelcast.client.impl.client.SecureRequest;
-import com.hazelcast.map.impl.MapEntrySet;
 import com.hazelcast.map.impl.MapPortableHook;
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.operation.EntrySetOperationFactory;
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.Portable;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
-import com.hazelcast.security.permission.ActionConstants;
-import com.hazelcast.security.permission.MapPermission;
-import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.query.Predicate;
+import com.hazelcast.query.TruePredicate;
+import com.hazelcast.util.IterationType;
+
 import java.io.IOException;
-import java.security.Permission;
-import java.util.Map;
-import java.util.Set;
 
-public class MapEntrySetRequest extends AllPartitionsClientRequest implements Portable, RetryableRequest, SecureRequest {
-
-    private String name;
+public class MapEntrySetRequest extends AbstractMapQueryRequest {
 
     public MapEntrySetRequest() {
     }
 
     public MapEntrySetRequest(String name) {
-        this.name = name;
+        super(name, IterationType.ENTRY);
     }
 
     @Override
-    protected OperationFactory createOperationFactory() {
-        return new EntrySetOperationFactory(name);
-    }
-
-    @Override
-    protected Object reduce(Map<Integer, Object> map) {
-        MapEntrySet entrySet = new MapEntrySet();
-        MapService service = getService();
-        for (Object result : map.values()) {
-            Set<Map.Entry<Data, Data>> entries = ((MapEntrySet) service.getMapServiceContext().toObject(result)).getEntrySet();
-            for (Map.Entry<Data, Data> entry : entries) {
-                entrySet.add(entry);
-            }
-        }
-        return entrySet;
-    }
-
-    public String getServiceName() {
-        return MapService.SERVICE_NAME;
-    }
-
-    @Override
-    public int getFactoryId() {
-        return MapPortableHook.F_ID;
-    }
-
     public int getClassId() {
         return MapPortableHook.ENTRY_SET;
     }
 
-    public void write(PortableWriter writer) throws IOException {
-        writer.writeUTF("n", name);
-    }
-
-    public void read(PortableReader reader) throws IOException {
-        name = reader.readUTF("n");
-    }
-
-    public Permission getRequiredPermission() {
-        return new MapPermission(name, ActionConstants.ACTION_READ);
+    @Override
+    public Object[] getParameters() {
+        return new Object[]{TruePredicate.INSTANCE};
     }
 
     @Override
-    public String getDistributedObjectName() {
-        return name;
+    protected Predicate getPredicate() {
+        return TruePredicate.INSTANCE;
     }
 
     @Override
-    public String getMethodName() {
-        return "entrySet";
+    protected void writePortableInner(PortableWriter writer) throws IOException {
+    }
+
+    @Override
+    protected void readPortableInner(PortableReader reader) throws IOException {
     }
 }

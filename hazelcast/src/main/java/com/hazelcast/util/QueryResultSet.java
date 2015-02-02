@@ -62,10 +62,12 @@ public class QueryResultSet extends AbstractSet implements IdentifiedDataSeriali
         return entries.add(entry);
     }
 
+    @Override
     public boolean add(Object entry) {
         return entries.add((QueryResultEntry) entry);
     }
 
+    @Override
     public Iterator iterator() {
         return new QueryResultIterator(iterationType);
     }
@@ -75,24 +77,25 @@ public class QueryResultSet extends AbstractSet implements IdentifiedDataSeriali
      */
     private final class QueryResultIterator implements Iterator {
 
-        final Iterator<QueryResultEntry> iter = entries.iterator();
+        private final Iterator<QueryResultEntry> entryIterator = entries.iterator();
+        private final IterationType iterationType;
 
-        final IterationType iterType;
-
-        private QueryResultIterator(IterationType iterType) {
-            this.iterType = iterType;
+        private QueryResultIterator(IterationType iterationType) {
+            this.iterationType = iterationType;
         }
 
+        @Override
         public boolean hasNext() {
-            return iter.hasNext();
+            return entryIterator.hasNext();
         }
 
+        @Override
         public Object next() {
-            QueryResultEntry entry = iter.next();
-            if (iterType == IterationType.VALUE) {
+            QueryResultEntry entry = entryIterator.next();
+            if (iterationType == IterationType.VALUE) {
                 Data valueData = entry.getValueData();
                 return (data) ? valueData : serializationService.toObject(valueData);
-            } else if (iterType == IterationType.KEY) {
+            } else if (iterationType == IterationType.KEY) {
                 Data keyData = entry.getKeyData();
                 return (data) ? keyData : serializationService.toObject(keyData);
             } else {
@@ -108,6 +111,7 @@ public class QueryResultSet extends AbstractSet implements IdentifiedDataSeriali
             }
         }
 
+        @Override
         public void remove() {
             throw new UnsupportedOperationException();
         }

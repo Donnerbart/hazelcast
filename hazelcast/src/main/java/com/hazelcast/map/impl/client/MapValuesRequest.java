@@ -16,55 +16,22 @@
 
 package com.hazelcast.map.impl.client;
 
-import com.hazelcast.client.impl.client.AllPartitionsClientRequest;
-import com.hazelcast.client.impl.client.RetryableRequest;
-import com.hazelcast.client.impl.client.SecureRequest;
 import com.hazelcast.map.impl.MapPortableHook;
-import com.hazelcast.map.impl.MapService;
-import com.hazelcast.map.impl.MapValueCollection;
-import com.hazelcast.map.impl.operation.MapValuesOperationFactory;
-import com.hazelcast.nio.serialization.Data;
-import com.hazelcast.nio.serialization.Portable;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
-import com.hazelcast.security.permission.ActionConstants;
-import com.hazelcast.security.permission.MapPermission;
-import com.hazelcast.spi.OperationFactory;
+import com.hazelcast.query.Predicate;
+import com.hazelcast.query.TruePredicate;
+import com.hazelcast.util.IterationType;
+
 import java.io.IOException;
-import java.security.Permission;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
-public class MapValuesRequest extends AllPartitionsClientRequest implements Portable, SecureRequest, RetryableRequest {
-
-    private String name;
+public class MapValuesRequest extends AbstractMapQueryRequest {
 
     public MapValuesRequest() {
     }
 
     public MapValuesRequest(String name) {
-        this.name = name;
-    }
-
-    @Override
-    protected OperationFactory createOperationFactory() {
-        return new MapValuesOperationFactory(name);
-    }
-
-    @Override
-    protected Object reduce(Map<Integer, Object> results) {
-        List<Data> values = new ArrayList<Data>();
-        MapService mapService = getService();
-        for (Object result : results.values()) {
-            values.addAll(((MapValueCollection) mapService.getMapServiceContext().toObject(result)).getValues());
-        }
-        return new MapValueCollection(values);
-    }
-
-    @Override
-    public int getFactoryId() {
-        return MapPortableHook.F_ID;
+        super(name, IterationType.VALUE);
     }
 
     @Override
@@ -73,32 +40,20 @@ public class MapValuesRequest extends AllPartitionsClientRequest implements Port
     }
 
     @Override
-    public String getServiceName() {
-        return MapService.SERVICE_NAME;
+    public Object[] getParameters() {
+        return new Object[]{TruePredicate.INSTANCE};
     }
 
     @Override
-    public Permission getRequiredPermission() {
-        return new MapPermission(name, ActionConstants.ACTION_READ);
+    protected Predicate getPredicate() {
+        return TruePredicate.INSTANCE;
     }
 
     @Override
-    public String getDistributedObjectName() {
-        return name;
+    protected void writePortableInner(PortableWriter writer) throws IOException {
     }
 
     @Override
-    public String getMethodName() {
-        return "values";
-    }
-
-    @Override
-    public void write(PortableWriter writer) throws IOException {
-        writer.writeUTF("n", name);
-    }
-
-    @Override
-    public void read(PortableReader reader) throws IOException {
-        name = reader.readUTF("n");
+    protected void readPortableInner(PortableReader reader) throws IOException {
     }
 }

@@ -28,7 +28,6 @@ public class MapValueCollection implements IdentifiedDataSerializable {
 
     Collection<Data> values;
 
-
     public MapValueCollection(Collection<Data> values) {
         this.values = values;
     }

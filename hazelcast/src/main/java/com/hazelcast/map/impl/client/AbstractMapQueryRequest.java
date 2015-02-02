@@ -16,21 +16,24 @@
 
 package com.hazelcast.map.impl.client;
 
-import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
-
 import com.hazelcast.client.impl.client.InvocationClientRequest;
 import com.hazelcast.client.impl.client.RetryableRequest;
 import com.hazelcast.client.impl.client.SecureRequest;
 import com.hazelcast.instance.MemberImpl;
+import com.hazelcast.map.impl.MapEntrySet;
+import com.hazelcast.map.impl.MapKeySet;
 import com.hazelcast.map.impl.MapPortableHook;
 import com.hazelcast.map.impl.MapService;
+import com.hazelcast.map.impl.MapValueCollection;
 import com.hazelcast.map.impl.QueryResult;
 import com.hazelcast.map.impl.operation.QueryOperation;
 import com.hazelcast.map.impl.operation.QueryPartitionOperation;
+import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.Portable;
 import com.hazelcast.nio.serialization.PortableReader;
 import com.hazelcast.nio.serialization.PortableWriter;
 import com.hazelcast.query.Predicate;
+import com.hazelcast.query.impl.QueryResultEntry;
 import com.hazelcast.security.permission.ActionConstants;
 import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.util.ExceptionUtil;
@@ -43,13 +46,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-abstract class AbstractMapQueryRequest extends InvocationClientRequest implements Portable, SecureRequest,
-        RetryableRequest {
+import static com.hazelcast.map.impl.MapService.SERVICE_NAME;
 
-    protected IterationType iterationType;
+abstract class AbstractMapQueryRequest extends InvocationClientRequest implements Portable, SecureRequest, RetryableRequest {
+
+    private IterationType iterationType;
     private String name;
 
     public AbstractMapQueryRequest() {
@@ -62,7 +68,15 @@ abstract class AbstractMapQueryRequest extends InvocationClientRequest implement
 
     @Override
     protected final void invoke() {
-        QueryResultSet result = new QueryResultSet(null, iterationType, true);
+        boolean isUserQuery = (getClassId() == MapPortableHook.QUERY);
+        QueryResultSet result = null;
+        Set dataSet = null;
+        if (isUserQuery) {
+            result = new QueryResultSet(null, iterationType, true);
+        } else {
+            dataSet = new HashSet();
+        }
+
         try {
             Predicate predicate = getPredicate();
 
@@ -72,45 +86,52 @@ abstract class AbstractMapQueryRequest extends InvocationClientRequest implement
 
             int partitionCount = getClientEngine().getPartitionService().getPartitionCount();
             Set<Integer> finishedPartitions = new HashSet<Integer>(partitionCount);
-            collectResults(result, futures, finishedPartitions);
+            collectResults(isUserQuery, result, dataSet, futures, finishedPartitions);
 
             if (hasMissingPartitions(finishedPartitions, partitionCount)) {
                 List<Integer> missingList = findMissingPartitions(finishedPartitions, partitionCount);
                 List<Future> missingFutures = new ArrayList<Future>(missingList.size());
                 createInvocationsForMissingPartitions(missingList, missingFutures, predicate);
-                collectResultsFromMissingPartitions(result, missingFutures);
+                collectResultsFromMissingPartitions(isUserQuery, result, dataSet, missingFutures);
             }
         } catch (Throwable t) {
             throw ExceptionUtil.rethrow(t);
         }
-        getEndpoint().sendResponse(result, getCallId());
+
+        getEndpoint().sendResponse(getFinalResult(isUserQuery, result, dataSet), getCallId());
     }
 
     private void createInvocations(Collection<MemberImpl> members, List<Future> futures, Predicate predicate) {
         for (MemberImpl member : members) {
-            Future future = createInvocationBuilder(SERVICE_NAME, new QueryOperation(name, predicate),
-                    member.getAddress()).invoke();
-            futures.add(future);
+            futures.add(createInvocationBuilder(SERVICE_NAME, new QueryOperation(name, predicate), member.getAddress()).invoke());
         }
     }
 
-    private void collectResults(QueryResultSet result, List<Future> futures, Set<Integer> finishedPartitions)
-            throws InterruptedException, java.util.concurrent.ExecutionException {
+    @SuppressWarnings("unchecked")
+    private void collectResults(boolean isUserQuery, QueryResultSet result, Set dataSet, List<Future> futures,
+                                Set<Integer> finishedPartitions) throws InterruptedException, ExecutionException {
+        for (Future<QueryResult> future : futures) {
+            QueryResult queryResult =  future.get();
+            if (queryResult == null) {
+                continue;
+            }
 
-        for (Future future : futures) {
-            QueryResult queryResult = (QueryResult) future.get();
-            if (queryResult != null) {
-                Collection<Integer> partitionIds = queryResult.getPartitionIds();
-                if (partitionIds != null) {
-                    finishedPartitions.addAll(partitionIds);
-                    result.addAll(queryResult.getResult());
-                }
+            Collection<Integer> partitionIds = queryResult.getPartitionIds();
+            if (partitionIds == null) {
+                continue;
+            }
+
+            finishedPartitions.addAll(partitionIds);
+            if (isUserQuery) {
+                result.addAll(queryResult.getResult());
+            } else {
+                addQueryResultEntryToDataHashSet(dataSet, queryResult.getResult());
             }
         }
     }
 
     private boolean hasMissingPartitions(Set<Integer> finishedPartitions, int partitionCount) {
-        return finishedPartitions.size() != partitionCount;
+        return (finishedPartitions.size() != partitionCount);
     }
 
     private List<Integer> findMissingPartitions(Set<Integer> finishedPartitions, int partitionCount) {
@@ -137,12 +158,62 @@ abstract class AbstractMapQueryRequest extends InvocationClientRequest implement
         }
     }
 
-    private void collectResultsFromMissingPartitions(QueryResultSet result, List<Future> futures)
-            throws InterruptedException, java.util.concurrent.ExecutionException {
+    @SuppressWarnings("unchecked")
+    private void collectResultsFromMissingPartitions(boolean isUserQuery, QueryResultSet result, Set dataSet,
+                                                     List<Future> futures) throws InterruptedException, ExecutionException {
         for (Future future : futures) {
             QueryResult queryResult = (QueryResult) future.get();
-            result.addAll(queryResult.getResult());
+            if (isUserQuery) {
+                result.addAll(queryResult.getResult());
+            } else {
+                addQueryResultEntryToDataHashSet(dataSet, queryResult.getResult());
+            }
         }
+    }
+
+    private void addQueryResultEntryToDataHashSet(Set<Object> dataSet, Collection<QueryResultEntry> entries) {
+        for (QueryResultEntry entry : entries) {
+            if (iterationType == IterationType.KEY) {
+                dataSet.add(entry.getKeyData());
+            } else if (iterationType == IterationType.VALUE) {
+                dataSet.add(entry.getValueData());
+            } else if (iterationType == IterationType.ENTRY) {
+                dataSet.add(new SimpleEntry(entry.getKeyData(), entry.getValueData()));
+            } else {
+                throw new IllegalArgumentException("IterationType[" + iterationType + "] is unknown!!!");
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object getFinalResult(boolean isUserQuery, QueryResultSet result, Set dataSet) {
+        if (isUserQuery) {
+            return result;
+        }
+        if (iterationType == IterationType.VALUE) {
+            return new MapValueCollection(dataSet);
+        }
+        if (iterationType == IterationType.KEY) {
+            return new MapKeySet(dataSet);
+        }
+        if (iterationType == IterationType.ENTRY) {
+            return new MapEntrySet(dataSet);
+        }
+        return null;
+    }
+
+    @Override
+    public final String getMethodName() {
+        if (iterationType == IterationType.KEY) {
+            return "keySet";
+        }
+        if (iterationType == IterationType.VALUE) {
+            return "values";
+        }
+        if (iterationType == IterationType.ENTRY) {
+            return "entrySet";
+        }
+        throw new IllegalArgumentException("IterationType " + iterationType + " is unknown!");
     }
 
     @Override
@@ -156,24 +227,24 @@ abstract class AbstractMapQueryRequest extends InvocationClientRequest implement
     }
 
     @Override
-    public Permission getRequiredPermission() {
+    public final Permission getRequiredPermission() {
         return new MapPermission(name, ActionConstants.ACTION_READ);
     }
 
     @Override
-    public String getDistributedObjectName() {
+    public final String getDistributedObjectName() {
         return name;
     }
 
     @Override
-    public void write(PortableWriter writer) throws IOException {
+    public final void write(PortableWriter writer) throws IOException {
         writer.writeUTF("n", name);
         writer.writeUTF("t", iterationType.toString());
         writePortableInner(writer);
     }
 
     @Override
-    public void read(PortableReader reader) throws IOException {
+    public final void read(PortableReader reader) throws IOException {
         name = reader.readUTF("n");
         iterationType = IterationType.valueOf(reader.readUTF("t"));
         readPortableInner(reader);
@@ -184,4 +255,29 @@ abstract class AbstractMapQueryRequest extends InvocationClientRequest implement
     protected abstract void writePortableInner(PortableWriter writer) throws IOException;
 
     protected abstract void readPortableInner(PortableReader reader) throws IOException;
+
+    private static final class SimpleEntry implements Map.Entry<Data, Data> {
+        private final Data key;
+        private final Data value;
+
+        private SimpleEntry(Data key, Data value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public Data getKey() {
+            return key;
+        }
+
+        @Override
+        public Data getValue() {
+            return value;
+        }
+
+        @Override
+        public Data setValue(Data value) {
+            throw new UnsupportedOperationException();
+        }
+    }
 }
