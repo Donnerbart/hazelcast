@@ -32,8 +32,10 @@ import com.hazelcast.security.permission.MapPermission;
 import com.hazelcast.spi.OperationFactory;
 import java.io.IOException;
 import java.security.Permission;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class MapEntrySetRequest extends AllPartitionsClientRequest implements Portable, RetryableRequest, SecureRequest {
 
@@ -53,15 +55,16 @@ public class MapEntrySetRequest extends AllPartitionsClientRequest implements Po
 
     @Override
     protected Object reduce(Map<Integer, Object> map) {
-        MapEntrySet entrySet = new MapEntrySet();
+        long started = System.nanoTime();
+        Set<Map.Entry<Data, Data>> entrySet = new HashSet<Map.Entry<Data, Data>>();
         MapService service = getService();
         for (Object result : map.values()) {
             Set<Map.Entry<Data, Data>> entries = ((MapEntrySet) service.getMapServiceContext().toObject(result)).getEntrySet();
-            for (Map.Entry<Data, Data> entry : entries) {
-                entrySet.add(entry);
-            }
+            entrySet.addAll(entries);
         }
-        return entrySet;
+        MapEntrySet finalResult = new MapEntrySet(entrySet);
+        System.out.println("      MapEntrySetRequest.reduce() took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+        return finalResult;
     }
 
     public String getServiceName() {

@@ -35,6 +35,7 @@ import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class MapValuesRequest extends AllPartitionsClientRequest implements Portable, SecureRequest, RetryableRequest {
 
@@ -54,12 +55,15 @@ public class MapValuesRequest extends AllPartitionsClientRequest implements Port
 
     @Override
     protected Object reduce(Map<Integer, Object> results) {
+        long started = System.nanoTime();
         List<Data> values = new ArrayList<Data>();
         MapService mapService = getService();
         for (Object result : results.values()) {
             values.addAll(((MapValueCollection) mapService.getMapServiceContext().toObject(result)).getValues());
         }
-        return new MapValueCollection(values);
+        MapValueCollection finalResult = new MapValueCollection(values);
+        System.out.println("      MapValuesRequest.reduce() took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+        return finalResult;
     }
 
     @Override

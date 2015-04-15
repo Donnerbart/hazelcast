@@ -34,6 +34,7 @@ import java.security.Permission;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class MapKeySetRequest extends AllPartitionsClientRequest implements Portable, RetryableRequest, SecureRequest {
 
@@ -53,13 +54,16 @@ public class MapKeySetRequest extends AllPartitionsClientRequest implements Port
 
     @Override
     protected Object reduce(Map<Integer, Object> map) {
+        long started = System.nanoTime();
         Set res = new HashSet();
         MapService service = getService();
         for (Object o : map.values()) {
             Set keys = ((MapKeySet) service.getMapServiceContext().toObject(o)).getKeySet();
             res.addAll(keys);
         }
-        return new MapKeySet(res);
+        MapKeySet finalResult = new MapKeySet(res);
+        System.out.println("      MapKeySetRequest.reduce() took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+        return finalResult;
     }
 
     public String getServiceName() {

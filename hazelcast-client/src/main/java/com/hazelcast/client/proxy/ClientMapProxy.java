@@ -691,6 +691,7 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
 
     @Override
     public Set<K> keySet() {
+        System.out.println("IMap.keySet()");
         MapKeySetRequest request = new MapKeySetRequest(name);
         MapKeySet mapKeySet = invoke(request);
         Set<Data> keySetData = mapKeySet.getKeySet();
@@ -740,6 +741,7 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
 
     @Override
     public Collection<V> values() {
+        System.out.println("IMap.values()");
         MapValuesRequest request = new MapValuesRequest(name);
         MapValueCollection mapValueCollection = invoke(request);
 
@@ -754,10 +756,16 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
 
     @Override
     public Set<Entry<K, V>> entrySet() {
+        System.out.println("IMap.entrySet()");
         MapEntrySetRequest request = new MapEntrySetRequest(name);
+        long started = System.nanoTime();
         MapEntrySet result = invoke(request);
+        System.out.println("  ClientProxy.invoke() took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+
         Set<Entry<K, V>> entrySet = new HashSet<Entry<K, V>>();
         Set<Entry<Data, Data>> entries = result.getEntrySet();
+
+        started = System.nanoTime();
         for (Entry<Data, Data> dataEntry : entries) {
             Data keyData = dataEntry.getKey();
             Data valueData = dataEntry.getValue();
@@ -765,11 +773,13 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
             V value = toObject(valueData);
             entrySet.add(new AbstractMap.SimpleEntry<K, V>(key, value));
         }
+        System.out.println("  entrySet.add(...) took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
         return entrySet;
     }
 
     @Override
     public Set<K> keySet(Predicate predicate) {
+        System.out.println("IMap.keySet(predicate)");
         PagingPredicate pagingPredicate = null;
         if (predicate instanceof PagingPredicate) {
             pagingPredicate = (PagingPredicate) predicate;
@@ -813,6 +823,7 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
 
     @Override
     public Set<Entry<K, V>> entrySet(Predicate predicate) {
+        System.out.println("IMap.entrySet(predicate)");
         PagingPredicate pagingPredicate = null;
         if (predicate instanceof PagingPredicate) {
             pagingPredicate = (PagingPredicate) predicate;
@@ -848,6 +859,7 @@ public final class ClientMapProxy<K, V> extends ClientProxy implements IMap<K, V
 
     @Override
     public Collection<V> values(Predicate predicate) {
+        System.out.println("IMap.values(predicate)");
         if (predicate instanceof PagingPredicate) {
             return valuesForPagingPredicate((PagingPredicate) predicate);
         }

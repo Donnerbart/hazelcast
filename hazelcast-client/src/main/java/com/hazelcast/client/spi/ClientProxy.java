@@ -29,6 +29,7 @@ import com.hazelcast.partition.strategy.StringPartitioningStrategy;
 import com.hazelcast.util.ExceptionUtil;
 
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public abstract class ClientProxy implements DistributedObject {
 
@@ -147,9 +148,17 @@ public abstract class ClientProxy implements DistributedObject {
 
     protected <T> T invoke(ClientRequest req) {
         try {
+            System.out.println("  ClientProxy.invoke()");
             final Future future = new ClientInvocation(getClient(), req).invoke();
+
+            long started = System.nanoTime();
             Object result = future.get();
-            return toObject(result);
+            System.out.println("    future.get() took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+
+            started = System.nanoTime();
+            T object = toObject(result);
+            System.out.println("    toObject(result) took " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started) + " ms");
+            return object;
         } catch (Exception e) {
             throw ExceptionUtil.rethrow(e);
         }
