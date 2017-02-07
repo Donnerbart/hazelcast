@@ -11,7 +11,6 @@ import com.hazelcast.core.IMap;
 import com.hazelcast.core.MapLoader;
 import com.hazelcast.core.MapStore;
 import com.hazelcast.map.ReachedMaxSizeException;
-import com.hazelcast.spi.properties.GroupProperty;
 import com.hazelcast.test.AssertTask;
 import com.hazelcast.test.HazelcastParallelClassRunner;
 import com.hazelcast.test.HazelcastTestSupport;
@@ -35,8 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import static com.hazelcast.spi.properties.GroupProperty.MAP_WRITE_BEHIND_QUEUE_CAPACITY;
+import static java.lang.String.valueOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category(SlowTest.class)
@@ -48,33 +48,35 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
     private TestHazelcastFactory hazelcastFactory = new TestHazelcastFactory();
     private Config nodeConfig;
 
+    @Before
+    public void setup() {
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(new SimpleMapStore())
+                .setInitialLoadMode(MapStoreConfig.InitialLoadMode.EAGER);
+
+        MapConfig mapConfig = new MapConfig()
+                .setName(MAP_NAME)
+                .setMapStoreConfig(mapStoreConfig);
+
+        nodeConfig = new Config()
+                .addMapConfig(mapConfig);
+    }
+
     @After
     public void tearDown() {
         hazelcastFactory.terminateAll();
-    }
-
-    @Before
-    public void setup() {
-        nodeConfig = new Config();
-        MapConfig mapConfig = new MapConfig();
-        MapStoreConfig mapStoreConfig = new MapStoreConfig();
-        mapStoreConfig.setEnabled(true);
-        mapStoreConfig.setImplementation(new SimpleMapStore());
-        mapStoreConfig.setInitialLoadMode(MapStoreConfig.InitialLoadMode.EAGER);
-        mapConfig.setName(MAP_NAME);
-        mapConfig.setMapStoreConfig(mapStoreConfig);
-        nodeConfig.addMapConfig(mapConfig);
     }
 
     @Test
     public void testOneClient_KickOffMapStoreLoad() {
         hazelcastFactory.newHazelcastInstance(nodeConfig);
 
-        ClientThread client1 = new ClientThread();
-        client1.start();
+        ClientThread client = new ClientThread();
+        client.start();
 
-        assertJoinable(client1);
-        assertSizeEventually(SimpleMapStore.MAX_KEYS, client1.map);
+        assertJoinable(client);
+        assertSizeEventually(SimpleMapStore.MAX_KEYS, client.map);
     }
 
     @Test
@@ -82,9 +84,9 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
         hazelcastFactory.newHazelcastInstance(nodeConfig);
         ClientThread[] clientThreads = new ClientThread[2];
         for (int i = 0; i < clientThreads.length; i++) {
-            ClientThread client1 = new ClientThread();
-            client1.start();
-            clientThreads[i] = client1;
+            ClientThread client = new ClientThread();
+            client.start();
+            clientThreads[i] = client;
         }
 
         assertJoinable(clientThreads);
@@ -98,23 +100,29 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
     public void testOneClientKickOffMapStoreLoad_ThenNodeJoins() {
         hazelcastFactory.newHazelcastInstance(nodeConfig);
 
-        ClientThread client1 = new ClientThread();
-        client1.start();
+        ClientThread client = new ClientThread();
+        client.start();
 
         hazelcastFactory.newHazelcastInstance(nodeConfig);
 
-        assertJoinable(client1);
+        assertJoinable(client);
 
-        assertSizeEventually(SimpleMapStore.MAX_KEYS, client1.map);
+        assertSizeEventually(SimpleMapStore.MAX_KEYS, client.map);
     }
 
+    /**
+     * https://github.com/hazelcast/hazelcast/issues/2112
+     */
     @Test
-    public void testForIssue2112() {
+    public void testSubsequentProxyCreation_shouldNotThrowMapIsNotReadyException() {
         hazelcastFactory.newHazelcastInstance(nodeConfig);
-        IMap<String, String> map = hazelcastFactory.newHazelcastClient().getMap(ClientMapStoreTest.MAP_NAME);
+        HazelcastInstance client1 = hazelcastFactory.newHazelcastClient();
+        IMap<String, String> map = client1.getMap(MAP_NAME);
         assertSizeEventually(SimpleMapStore.MAX_KEYS, map);
+
         hazelcastFactory.newHazelcastInstance(nodeConfig);
-        map = hazelcastFactory.newHazelcastClient().getMap(ClientMapStoreTest.MAP_NAME);
+        HazelcastInstance client2 = hazelcastFactory.newHazelcastClient();
+        map = client2.getMap(MAP_NAME);
         assertSizeEventually(SimpleMapStore.MAX_KEYS, map);
     }
 
@@ -122,23 +130,19 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
     public void mapSize_After_MapStore_OperationQueue_OverFlow() throws Exception {
         int maxCapacity = 1000;
 
-        Config config = new Config();
-        config.setProperty(GroupProperty.MAP_WRITE_BEHIND_QUEUE_CAPACITY.getName(), String.valueOf(maxCapacity));
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(new MapStoreBackup())
+                .setWriteDelaySeconds(Integer.MAX_VALUE)
+                .setWriteCoalescing(false);
 
-        MapConfig mapConfig = new MapConfig();
-        MapStoreConfig mapStoreConfig = new MapStoreConfig();
+        MapConfig mapConfig = new MapConfig()
+                .setName(MAP_NAME)
+                .setMapStoreConfig(mapStoreConfig);
 
-        MapStoreBackup store = new MapStoreBackup();
-        int delaySeconds = Integer.MAX_VALUE;
-        mapStoreConfig.setEnabled(true);
-        mapStoreConfig.setImplementation(store);
-        mapStoreConfig.setWriteDelaySeconds(delaySeconds);
-        mapStoreConfig.setWriteCoalescing(false);
-
-        mapConfig.setName(MAP_NAME);
-
-        mapConfig.setMapStoreConfig(mapStoreConfig);
-        config.addMapConfig(mapConfig);
+        Config config = new Config()
+                .setProperty(MAP_WRITE_BEHIND_QUEUE_CAPACITY.getName(), valueOf(maxCapacity))
+                .addMapConfig(mapConfig);
 
         HazelcastInstance server = hazelcastFactory.newHazelcastInstance(config);
         HazelcastInstance client = hazelcastFactory.newHazelcastClient();
@@ -165,60 +169,49 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
         assertEquals(map.size(), maxCapacity);
     }
 
-    @Test
+    @Test(expected = ReachedMaxSizeException.class)
     public void mapStore_OperationQueue_AtMaxCapacity() {
         int maxCapacity = 1000;
 
-        Config config = new Config();
-        config.setProperty(GroupProperty.MAP_WRITE_BEHIND_QUEUE_CAPACITY.getName(), String.valueOf(maxCapacity));
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(new MapStoreBackup())
+                .setWriteDelaySeconds(60)
+                .setWriteCoalescing(false);
 
-        MapConfig mapConfig = new MapConfig();
-        MapStoreConfig mapStoreConfig = new MapStoreConfig();
+        MapConfig mapConfig = new MapConfig()
+                .setName(MAP_NAME)
+                .setMapStoreConfig(mapStoreConfig);
 
-        MapStoreBackup store = new MapStoreBackup();
-        mapStoreConfig.setEnabled(true);
-        mapStoreConfig.setImplementation(store);
-        mapStoreConfig.setWriteDelaySeconds(60);
-        mapStoreConfig.setWriteCoalescing(false);
-
-        mapConfig.setName(MAP_NAME);
-
-        mapConfig.setMapStoreConfig(mapStoreConfig);
-        config.addMapConfig(mapConfig);
+        Config config = new Config()
+                .setProperty(MAP_WRITE_BEHIND_QUEUE_CAPACITY.getName(), valueOf(maxCapacity))
+                .addMapConfig(mapConfig);
 
         HazelcastInstance server = hazelcastFactory.newHazelcastInstance(config);
         HazelcastInstance client = hazelcastFactory.newHazelcastClient();
 
         IMap<Integer, Integer> map = client.getMap(MAP_NAME);
-
         for (int i = 0; i < maxCapacity; i++) {
             map.put(i, i);
         }
         assertEquals(maxCapacity, map.size());
 
-        try {
-            map.put(maxCapacity, maxCapacity);
-            fail("Should not exceed max capacity");
-        } catch (ReachedMaxSizeException expected) {
-            ignore(expected);
-        }
+        map.put(maxCapacity, maxCapacity);
     }
 
     @Test
     public void destroyMap_configuredWithMapStore() {
-        Config config = new Config();
-        MapConfig mapConfig = new MapConfig();
-        MapStoreConfig mapStoreConfig = new MapStoreConfig();
+        MapStoreConfig mapStoreConfig = new MapStoreConfig()
+                .setEnabled(true)
+                .setImplementation(new MapStoreBackup())
+                .setWriteDelaySeconds(4);
 
-        MapStoreBackup store = new MapStoreBackup();
-        mapStoreConfig.setEnabled(true);
-        mapStoreConfig.setImplementation(store);
-        mapStoreConfig.setWriteDelaySeconds(4);
+        MapConfig mapConfig = new MapConfig()
+                .setName(MAP_NAME)
+                .setMapStoreConfig(mapStoreConfig);
 
-        mapConfig.setName(MAP_NAME);
-
-        mapConfig.setMapStoreConfig(mapStoreConfig);
-        config.addMapConfig(mapConfig);
+        Config config = new Config()
+                .addMapConfig(mapConfig);
 
         HazelcastInstance server = hazelcastFactory.newHazelcastInstance(config);
         HazelcastInstance client = hazelcastFactory.newHazelcastClient();
@@ -231,132 +224,16 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
         map.destroy();
     }
 
-    static class SimpleMapStore implements MapStore<String, String>, MapLoader<String, String> {
-
-        static final int MAX_KEYS = 30;
-        static final int DELAY_SECONDS_PER_KEY = 1;
-
-        @Override
-        public String load(String key) {
-            sleepSeconds(DELAY_SECONDS_PER_KEY);
-            return key + "value";
-        }
-
-        @Override
-        public Map<String, String> loadAll(Collection<String> keys) {
-            Map<String, String> map = new HashMap<String, String>();
-            for (String key : keys) {
-                map.put(key, load(key));
-            }
-            return map;
-        }
-
-        @Override
-        public Set<String> loadAllKeys() {
-            Set<String> keys = new HashSet<String>();
-
-            for (int i = 0; i < MAX_KEYS; i++) {
-                keys.add("key" + i);
-            }
-
-            return keys;
-        }
-
-        @Override
-        public void delete(String key) {
-            sleepSeconds(DELAY_SECONDS_PER_KEY);
-        }
-
-        @Override
-        public void deleteAll(Collection<String> keys) {
-            for (String key : keys) {
-                delete(key);
-            }
-        }
-
-        @Override
-        public void store(String key, String value) {
-            sleepSeconds(DELAY_SECONDS_PER_KEY);
-        }
-
-        @Override
-        public void storeAll(Map<String, String> entries) {
-            for (Map.Entry<String, String> e : entries.entrySet()) {
-                store(e.getKey(), e.getValue());
-            }
-        }
-    }
-
-    private class ClientThread extends Thread {
-
-        IMap<String, String> map;
-
-        @Override
-        public void run() {
-            HazelcastInstance client = hazelcastFactory.newHazelcastClient();
-            map = client.getMap(ClientMapStoreTest.MAP_NAME);
-            map.size();
-        }
-    }
-
-    public class MapStoreBackup implements MapStore<Object, Object> {
-
-        public final Map<Object, Object> store = new ConcurrentHashMap<Object, Object>();
-
-        @Override
-        public void store(Object key, Object value) {
-            store.put(key, value);
-        }
-
-        @Override
-        public void storeAll(Map<Object, Object> map) {
-            for (Map.Entry<Object, Object> kvp : map.entrySet()) {
-                store.put(kvp.getKey(), kvp.getValue());
-            }
-        }
-
-        @Override
-        public void delete(Object key) {
-            store.remove(key);
-        }
-
-        @Override
-        public void deleteAll(Collection<Object> keys) {
-            for (Object key : keys) {
-                store.remove(key);
-            }
-        }
-
-        @Override
-        public Object load(Object key) {
-            return store.get(key);
-        }
-
-        @Override
-        public Map<Object, Object> loadAll(Collection<Object> keys) {
-            Map<Object, Object> result = new HashMap<Object, Object>();
-            for (Object key : keys) {
-                Object v = store.get(key);
-                if (v != null) {
-                    result.put(key, v);
-                }
-            }
-            return result;
-        }
-
-        @Override
-        public Set<Object> loadAllKeys() {
-            return store.keySet();
-        }
-    }
-
+    /**
+     * https://github.com/hazelcast/hazelcast/issues/3023
+     */
     @Test
-    public void testIssue3023_testWithSubStringMapNames() throws Exception {
+    public void testCorrectMapStoreConfigurationIsUsed_whenWildcardsAreUsedInXML() throws Exception {
         String mapNameWithStore = "MapStore*";
         String mapNameWithStoreAndSize = "MapStoreMaxSize*";
 
         String xml = "<hazelcast xsi:schemaLocation=\"http://www.hazelcast.com/schema/config\n" +
-                "                             http://www.hazelcast.com/schema/config/hazelcast-config-3.2.xsd\"\n" +
+                "                             http://www.hazelcast.com/schema/config/hazelcast-config-3.8.xsd\"\n" +
                 "                             xmlns=\"http://www.hazelcast.com/schema/config\"\n" +
                 "                             xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n" +
                 "\n" +
@@ -406,9 +283,126 @@ public class ClientMapStoreTest extends HazelcastTestSupport {
         });
     }
 
-    private Config buildConfig(String xml) {
+    private static Config buildConfig(String xml) {
         ByteArrayInputStream bis = new ByteArrayInputStream(xml.getBytes());
         XmlConfigBuilder configBuilder = new XmlConfigBuilder(bis);
         return configBuilder.build();
+    }
+
+    private class ClientThread extends Thread {
+
+        IMap<String, String> map;
+
+        @Override
+        public void run() {
+            HazelcastInstance client = hazelcastFactory.newHazelcastClient();
+            map = client.getMap(MAP_NAME);
+            map.size();
+        }
+    }
+
+    private static class MapStoreBackup implements MapStore<Object, Object> {
+
+        public final Map<Object, Object> store = new ConcurrentHashMap<Object, Object>();
+
+        @Override
+        public void store(Object key, Object value) {
+            store.put(key, value);
+        }
+
+        @Override
+        public void storeAll(Map<Object, Object> map) {
+            for (Map.Entry<Object, Object> kvp : map.entrySet()) {
+                store.put(kvp.getKey(), kvp.getValue());
+            }
+        }
+
+        @Override
+        public void delete(Object key) {
+            store.remove(key);
+        }
+
+        @Override
+        public void deleteAll(Collection<Object> keys) {
+            for (Object key : keys) {
+                store.remove(key);
+            }
+        }
+
+        @Override
+        public Object load(Object key) {
+            return store.get(key);
+        }
+
+        @Override
+        public Map<Object, Object> loadAll(Collection<Object> keys) {
+            Map<Object, Object> result = new HashMap<Object, Object>();
+            for (Object key : keys) {
+                Object value = store.get(key);
+                if (value != null) {
+                    result.put(key, value);
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public Set<Object> loadAllKeys() {
+            return store.keySet();
+        }
+    }
+
+    private static class SimpleMapStore implements MapStore<String, String>, MapLoader<String, String> {
+
+        private static final int MAX_KEYS = 30;
+        private static final int DELAY_MILLIS_PER_KEY = 500;
+
+        @Override
+        public String load(String key) {
+            sleepMillis(DELAY_MILLIS_PER_KEY);
+            return key + "value";
+        }
+
+        @Override
+        public Map<String, String> loadAll(Collection<String> keys) {
+            Map<String, String> map = new HashMap<String, String>();
+            for (String key : keys) {
+                map.put(key, load(key));
+            }
+            return map;
+        }
+
+        @Override
+        public Set<String> loadAllKeys() {
+            Set<String> keys = new HashSet<String>();
+            for (int i = 0; i < MAX_KEYS; i++) {
+                keys.add("key" + i);
+            }
+            return keys;
+        }
+
+        @Override
+        public void delete(String key) {
+            sleepMillis(DELAY_MILLIS_PER_KEY);
+        }
+
+        @Override
+        public void deleteAll(Collection<String> keys) {
+            for (String key : keys) {
+                delete(key);
+            }
+        }
+
+        @Override
+        public void store(String key, String value) {
+            sleepMillis(DELAY_MILLIS_PER_KEY);
+        }
+
+        @Override
+        public void storeAll(Map<String, String> entries) {
+            for (Map.Entry<String, String> e : entries.entrySet()) {
+                store(e.getKey(), e.getValue());
+            }
+        }
     }
 }

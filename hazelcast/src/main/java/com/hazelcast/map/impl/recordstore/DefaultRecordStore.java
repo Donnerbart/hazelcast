@@ -47,7 +47,6 @@ import com.hazelcast.spi.NodeEngine;
 import com.hazelcast.spi.exception.RetryableHazelcastException;
 import com.hazelcast.util.Clock;
 import com.hazelcast.util.CollectionUtil;
-import com.hazelcast.util.ExceptionUtil;
 import com.hazelcast.util.FutureUtil;
 
 import java.util.ArrayList;
@@ -65,6 +64,7 @@ import static com.hazelcast.config.NativeMemoryConfig.MemoryAllocatorType.POOLED
 import static com.hazelcast.core.EntryEventType.ADDED;
 import static com.hazelcast.map.impl.ExpirationTimeSetter.updateExpiryTime;
 import static com.hazelcast.map.impl.mapstore.MapDataStores.EMPTY_MAP_DATA_STORE;
+import static com.hazelcast.util.ExceptionUtil.rethrow;
 import static com.hazelcast.util.MapUtil.createHashMap;
 import static java.util.Collections.EMPTY_SET;
 import static java.util.Collections.emptyList;
@@ -96,6 +96,7 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
         this.loadedOnCreate = false;
     }
 
+    @Override
     public void startLoading() {
         if (logger.isFinestEnabled()) {
             logger.finest("StartLoading invoked " + getStateMessage());
@@ -144,8 +145,8 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
             loadingFutures.add(f);
         }
 
-        // We should not track key loading here. IT's not key loading but values loading.
-        // Apart from that it's irrelevant for RECEIVER nodes. SENDER and SENDER_BACKUP will track the key-loading anyway.
+        // We should not track key loading here. It's not key loading but values loading.
+        // Apart from that it's irrelevant for RECEIVER nodes. SENDER and SENDER_BACKUP will track the key loading anyway.
         // Fixes https://github.com/hazelcast/hazelcast/issues/9255
     }
 
@@ -190,14 +191,15 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
                 FutureUtil.checkAllDone(doneFutures);
             } catch (Exception e) {
                 logger.severe("Exception while loading map " + name, e);
-                ExceptionUtil.rethrow(e);
+                throw rethrow(e);
             } finally {
-                loadingFutures.removeAll(doneFutures);
+                if (doneFutures != null) {
+                    loadingFutures.removeAll(doneFutures);
+                }
             }
         } else {
             keyLoader.triggerLoadingWithDelay();
-            throw new RetryableHazelcastException("Map " + getName()
-                    + " is still loading data from external store");
+            throw new RetryableHazelcastException("Map " + getName() + " is still loading data from external store");
         }
     }
 
@@ -214,9 +216,7 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
      * @param backup             <code>true</code> if backup, false otherwise.
      */
     protected void flush(Collection<Record> recordsToBeFlushed, boolean backup) {
-        Iterator<Record> iterator = recordsToBeFlushed.iterator();
-        while (iterator.hasNext()) {
-            Record record = iterator.next();
+        for (Record record : recordsToBeFlushed) {
             mapDataStore.flush(record.getKey(), record.getValue(), backup);
         }
     }
@@ -258,6 +258,7 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
         return record;
     }
 
+    @Override
     public Iterator<Record> iterator() {
         return new ReadOnlyRecordIterator(storage.values());
     }
@@ -286,7 +287,7 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
     @Override
     public void clearPartition(boolean onShutdown) {
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        LockService lockService = nodeEngine.getSharedService(LockService.SERVICE_NAME);
+        LockService lockService = nodeEngine.getService(LockService.SERVICE_NAME);
         if (lockService != null) {
             final DefaultObjectNamespace namespace
                     = new DefaultObjectNamespace(MapService.SERVICE_NAME, name);
@@ -686,7 +687,6 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
             resultMap.put(key, value);
 
             putFromLoad(key, value);
-
         }
 
         if (hasQueryCache()) {
@@ -859,11 +859,10 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
         }
         final MapServiceContext mapServiceContext = this.mapServiceContext;
         final Object current = record.getValue();
-        final String mapName = this.name;
         if (!recordFactory.isEquals(expect, current)) {
             return false;
         }
-        update = mapServiceContext.interceptPut(mapName, current, update);
+        update = mapServiceContext.interceptPut(name, current, update);
         update = mapDataStore.add(key, update, now);
         onStore(record);
         updateRecord(key, record, update, now);
@@ -987,7 +986,6 @@ public class DefaultRecordStore extends AbstractEvictableRecordStore {
         saveIndex(record, oldValue);
         return oldValue;
     }
-
 
     @Override
     public MapDataStore<Data, Object> getMapDataStore() {

@@ -138,7 +138,6 @@ public class MapKeyLoader {
     }
 
     public Future startInitialLoad(MapStoreContext mapStoreContext, int partitionId) {
-
         this.partitionId = partitionId;
         this.mapNamePartition = partitionService.getPartitionId(toData.apply(mapName));
         Role newRole = calculateRole();
@@ -180,9 +179,7 @@ public class MapKeyLoader {
      * Sends keys to all partitions in batches.
      */
     public Future<?> sendKeys(final MapStoreContext mapStoreContext, final boolean replaceExistingValues) {
-
         if (keyLoadFinished.isDone()) {
-
             keyLoadFinished = new LoadFinishedFuture();
 
             Future<Boolean> sent = execService.submit(MAP_LOAD_ALL_KEYS_EXECUTOR, new Callable<Boolean>() {
@@ -203,9 +200,7 @@ public class MapKeyLoader {
      * Check if loaded on SENDER partition. Triggers key loading if it hadn't started
      */
     public Future triggerLoading() {
-
         if (keyLoadFinished.isDone()) {
-
             keyLoadFinished = new LoadFinishedFuture();
 
             // side effect -> just trigger load on SENDER_BACKUP id SENDER died
@@ -223,7 +218,6 @@ public class MapKeyLoader {
     }
 
     public Future<?> startLoading(MapStoreContext mapStoreContext, boolean replaceExistingValues) {
-
         role.nextOrStay(Role.SENDER);
 
         if (state.is(State.LOADING)) {
@@ -265,15 +259,14 @@ public class MapKeyLoader {
         delayedTrigger.executeWithDelay();
     }
 
-    // If this gets invoked on SENDER BACKUP it means the SENDER died and SENDER BACKUP takes over.
+    // if this gets invoked on SENDER BACKUP it means the SENDER died and SENDER BACKUP takes over
     public boolean shouldDoInitialLoad() {
-
         if (role.is(Role.SENDER_BACKUP)) {
-            // was backup. become primary sender
+            // was backup -> become primary sender
             role.next(Role.SENDER);
 
             if (state.is(State.LOADING)) {
-                // previous loading was in progress. cancel and start from scratch
+                // previous loading was in progress -> cancel and start from scratch
                 state.next(State.NOT_LOADED);
                 keyLoadFinished.setResult(false);
             }
@@ -283,7 +276,6 @@ public class MapKeyLoader {
     }
 
     private void sendKeysInBatches(MapStoreContext mapStoreContext, boolean replaceExistingValues) throws Exception {
-
         if (logger.isFinestEnabled()) {
             logger.finest("sendKeysInBatches invoked " + getStateMessage());
         }
@@ -398,14 +390,13 @@ public class MapKeyLoader {
     }
 
     public void promoteToLoadedOnMigration() {
-        // The state machine cannot skip states so we need to promote to loaded step by step
+        // the state machine cannot skip states so we need to promote to loaded step by step
         state.next(State.LOADING);
         state.next(State.LOADED);
     }
 
     private String getStateMessage() {
-        return "on partitionId=" + partitionId + " on " + clusterService.getThisAddress() + " role=" + role
-                + " state=" + state;
+        return "on partitionId=" + partitionId + " on " + clusterService.getThisAddress() + " role=" + role + " state=" + state;
     }
 
     private static final class LoadFinishedFuture extends AbstractCompletableFuture<Boolean>
@@ -456,5 +447,4 @@ public class MapKeyLoader {
             return getClass().getSimpleName() + "{done=" + isDone() + "}";
         }
     }
-
 }

@@ -562,11 +562,11 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> imp
         }
     }
 
-    public void waitUntilLoaded() {
+    private void waitUntilLoaded() {
         try {
             int mapNamePartition = partitionService.getPartitionId(name);
-            // first we have to check if key-load finished - otherwise the loading on other partitions might not have started.
-            // In this case we can't invoke IsPartitionLoadedOperation -> they will return "true", but it won't be correct.
+            // first we have to check if key loading is finished, otherwise the loading on other partitions might not have started
+            // (in this case we can't invoke IsPartitionLoadedOperation -> they will return "true", but it won't be correct)
 
             int sleepDurationMillis = INITIAL_WAIT_LOAD_SLEEP_MILLIS;
             while (true) {
@@ -592,9 +592,8 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> imp
 
     private void waitAllTrue(Map<Integer, Object> results, OperationFactory operationFactory) throws InterruptedException {
         Iterator<Entry<Integer, Object>> iterator = results.entrySet().iterator();
-        boolean isFinished = false;
         Set<Integer> retrySet = new HashSet<Integer>();
-        while (!isFinished) {
+        while (true) {
             while (iterator.hasNext()) {
                 Entry<Integer, Object> entry = iterator.next();
                 if (Boolean.TRUE.equals(entry.getValue())) {
@@ -609,7 +608,7 @@ abstract class MapProxySupport extends AbstractDistributedObject<MapService> imp
                 TimeUnit.SECONDS.sleep(1);
                 retrySet.clear();
             } else {
-                isFinished = true;
+                break;
             }
         }
     }
