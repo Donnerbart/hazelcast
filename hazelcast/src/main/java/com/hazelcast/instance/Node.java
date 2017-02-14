@@ -188,7 +188,7 @@ public class Node {
             boolean liteMember = config.isLiteMember();
             address = addressPicker.getPublicAddress();
             nodeExtension = nodeContext.createNodeExtension(this);
-            final Map<String, Object> memberAttributes = findMemberAttributes(config.getMemberAttributeConfig().asReadOnly());
+            final Map<String, Object> memberAttributes = findMemberAttributes(config.getMemberAttributeConfig().getAsReadOnly());
             localMember = new MemberImpl(address, version, true, nodeExtension.createMemberUuid(address),
                     memberAttributes, liteMember, hazelcastInstance);
             loggingService.setThisMember(localMember);
