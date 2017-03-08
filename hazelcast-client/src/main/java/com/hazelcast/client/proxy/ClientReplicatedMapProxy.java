@@ -56,6 +56,7 @@ import com.hazelcast.query.Predicate;
 import com.hazelcast.replicatedmap.impl.record.ResultSet;
 import com.hazelcast.spi.impl.UnmodifiableLazyList;
 import com.hazelcast.util.IterationType;
+import com.hazelcast.util.collection.InflatableSet;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -392,11 +393,11 @@ public class ClientReplicatedMapProxy<K, V> extends ClientProxy implements Repli
         ClientMessage request = ReplicatedMapKeySetCodec.encodeRequest(name);
         ClientMessage response = invokeOnPartition(request, targetPartitionId);
         ReplicatedMapKeySetCodec.ResponseParameters result = ReplicatedMapKeySetCodec.decodeResponse(response);
-        List<Entry<K, V>> keys = new ArrayList<Entry<K, V>>(result.response.size());
+        InflatableSet.Builder<K> setBuilder = InflatableSet.newBuilder(result.response.size());
         for (Data dataKey : result.response) {
-            keys.add(new AbstractMap.SimpleImmutableEntry<K, V>((K) toObject(dataKey), null));
+            setBuilder.add((K) toObject(dataKey));
         }
-        return new ResultSet(keys, IterationType.KEY);
+        return setBuilder.build();
     }
 
     @Override
