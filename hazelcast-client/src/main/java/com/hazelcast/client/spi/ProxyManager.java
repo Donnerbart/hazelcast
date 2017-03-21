@@ -119,6 +119,7 @@ public final class ProxyManager {
     private final ConcurrentMap<String, ClientProxyFactory> proxyFactories = new ConcurrentHashMap<String, ClientProxyFactory>();
     private final ConcurrentMap<ObjectNamespace, ClientProxyFuture> proxies
             = new ConcurrentHashMap<ObjectNamespace, ClientProxyFuture>();
+    private ClientContext context;
 
     private final ListenerMessageCodec distributedObjectListenerCodec = new ListenerMessageCodec() {
         @Override
@@ -155,6 +156,7 @@ public final class ProxyManager {
     }
 
     public void init(ClientConfig config) {
+        context = new ClientContext(client, this);
         // register defaults
         register(MapService.SERVICE_NAME, createServiceProxyFactory(MapService.class));
         if (JCacheDetector.isJCacheAvailable(config.getClassLoader())) {
@@ -347,7 +349,6 @@ public final class ProxyManager {
         final Connection connection = getTargetOrOwnerConnection(initializationTarget);
         final ClientMessage clientMessage = ClientCreateProxyCodec.encodeRequest(clientProxy.getDistributedObjectName(),
                 clientProxy.getServiceName(), initializationTarget);
-        final ClientContext context = new ClientContext(client, this);
         new ClientInvocation(client, clientMessage, connection).invoke().get();
         clientProxy.setContext(context);
         clientProxy.onInitialize();
