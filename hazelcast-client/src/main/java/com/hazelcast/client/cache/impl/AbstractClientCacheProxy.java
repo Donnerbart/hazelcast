@@ -24,6 +24,7 @@ import com.hazelcast.client.impl.protocol.codec.CacheGetAllCodec;
 import com.hazelcast.client.impl.protocol.codec.CacheGetCodec;
 import com.hazelcast.client.impl.protocol.codec.CachePutAllCodec;
 import com.hazelcast.client.impl.protocol.codec.CacheSizeCodec;
+import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.ClientPartitionService;
 import com.hazelcast.client.spi.impl.ClientInvocation;
 import com.hazelcast.client.spi.impl.ClientInvocationFuture;
@@ -79,8 +80,8 @@ abstract class AbstractClientCacheProxy<K, V> extends AbstractClientInternalCach
         }
     };
 
-    protected AbstractClientCacheProxy(CacheConfig<K, V> cacheConfig) {
-        super(cacheConfig);
+    protected AbstractClientCacheProxy(CacheConfig<K, V> cacheConfig, ClientContext context) {
+        super(cacheConfig, context);
     }
 
     protected Object getCachedValue(Data keyData, boolean deserializeValue) {

@@ -89,8 +89,8 @@ public class ClientReplicatedMapProxy<K, V> extends ClientProxy implements Repli
 
     private int targetPartitionId;
 
-    public ClientReplicatedMapProxy(String serviceName, String objectName) {
-        super(serviceName, objectName);
+    public ClientReplicatedMapProxy(String serviceName, String objectName, ClientContext context) {
+        super(serviceName, objectName, context);
     }
 
     @Override

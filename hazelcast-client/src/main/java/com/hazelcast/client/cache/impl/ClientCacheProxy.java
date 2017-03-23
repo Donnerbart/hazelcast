@@ -79,8 +79,8 @@ import static com.hazelcast.internal.nearcache.NearCache.NOT_CACHED;
  */
 public class ClientCacheProxy<K, V> extends AbstractClientCacheProxy<K, V> {
 
-    public ClientCacheProxy(CacheConfig<K, V> cacheConfig) {
-        super(cacheConfig);
+    public ClientCacheProxy(CacheConfig<K, V> cacheConfig, ClientContext context) {
+        super(cacheConfig, context);
     }
 
     public NearCache getNearCache() {

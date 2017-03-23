@@ -16,7 +16,6 @@
 
 package com.hazelcast.client.cache.impl;
 
-import com.hazelcast.config.CacheConfig;
 import com.hazelcast.config.NearCacheConfig;
 import com.hazelcast.logging.AbstractLogger;
 import com.hazelcast.logging.LogEvent;
@@ -43,7 +42,7 @@ public class ClientCacheProxyTest extends HazelcastTestSupport {
     public void isCacheOnUpdate_prints_warning_message_for_deprecated_policy_CACHE() throws Exception {
         NearCacheConfig nearCacheConfig = new NearCacheConfig().setLocalUpdatePolicy(CACHE);
         TestLogger logger = new TestLogger();
-        new ClientCacheProxy(new CacheConfig()).isCacheOnUpdate(nearCacheConfig, "cacheName", logger);
+        ClientCacheProxy.isCacheOnUpdate(nearCacheConfig, "cacheName", logger);
 
         assertNotNull(logger.message);
     }
@@ -52,7 +51,7 @@ public class ClientCacheProxyTest extends HazelcastTestSupport {
     public void isCacheOnUpdate_not_prints_warning_message_for_policy_CACHE_ON_UPDATE() throws Exception {
         NearCacheConfig nearCacheConfig = new NearCacheConfig().setLocalUpdatePolicy(CACHE_ON_UPDATE);
         TestLogger logger = new TestLogger();
-        new ClientCacheProxy(new CacheConfig()).isCacheOnUpdate(nearCacheConfig, "cacheName", logger);
+        ClientCacheProxy.isCacheOnUpdate(nearCacheConfig, "cacheName", logger);
 
         assertNull(logger.message);
     }

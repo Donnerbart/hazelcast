@@ -183,8 +183,8 @@ abstract class AbstractClientInternalCacheProxy<K, V> extends AbstractClientCach
     // Eventually consistent near cache can only be used with server versions >= 3.8.
     private final int minConsistentNearCacheSupportingServerVersion = calculateVersion("3.8");
 
-    protected AbstractClientInternalCacheProxy(CacheConfig<K, V> cacheConfig) {
-        super(cacheConfig);
+    protected AbstractClientInternalCacheProxy(CacheConfig<K, V> cacheConfig, ClientContext context) {
+        super(cacheConfig, context);
         this.asyncListenerRegistrations = new ConcurrentHashMap<CacheEntryListenerConfiguration, String>();
         this.syncListenerRegistrations = new ConcurrentHashMap<CacheEntryListenerConfiguration, String>();
         this.syncLocks = new ConcurrentHashMap<Integer, CountDownLatch>();

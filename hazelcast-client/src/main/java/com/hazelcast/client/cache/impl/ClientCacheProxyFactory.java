@@ -19,6 +19,7 @@ package com.hazelcast.client.cache.impl;
 import com.hazelcast.cache.CacheNotExistsException;
 import com.hazelcast.cache.HazelcastCacheManager;
 import com.hazelcast.client.impl.HazelcastClientInstanceImpl;
+import com.hazelcast.client.spi.ClientContext;
 import com.hazelcast.client.spi.ClientProxy;
 import com.hazelcast.client.spi.ClientProxyFactory;
 import com.hazelcast.config.CacheConfig;
@@ -37,12 +38,12 @@ public class ClientCacheProxyFactory implements ClientProxyFactory {
     }
 
     @Override
-    public ClientProxy create(String id) {
+    public ClientProxy create(String id, ClientContext context) {
         CacheConfig cacheConfig = findCacheConfig(id);
         if (cacheConfig == null) {
             throw new CacheNotExistsException("Cache " + id + " is already destroyed or not created yet");
         }
-        return new ClientCacheProxy(cacheConfig);
+        return new ClientCacheProxy(cacheConfig, context);
     }
 
     @SuppressFBWarnings("RV_RETURN_VALUE_OF_PUTIFABSENT_IGNORED")

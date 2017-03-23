@@ -29,5 +29,5 @@ public interface ClientProxyFactory {
      * @param id the ID of the client proxy
      * @return the client proxy
      */
-    ClientProxy create(String id);
+    ClientProxy create(String id, ClientContext context);
 }

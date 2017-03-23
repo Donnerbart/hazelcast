@@ -96,8 +96,8 @@ public class ProxyFactoryTest {
         proxyFactoryConfig.setService(SERVICE_NAME);
         proxyFactoryConfig.setFactoryImpl(new ClientProxyFactory() {
             @Override
-            public ClientProxy create(String id) {
-                return new ClientProxy(SERVICE_NAME, id) {
+            public ClientProxy create(String id, ClientContext context) {
+                return new ClientProxy(SERVICE_NAME, id, context) {
                     @Override
                     protected void onInitialize() {
                         super.onInitialize();
@@ -118,12 +118,13 @@ public class ProxyFactoryTest {
         }
     }
 
-    private static class ExpectedError extends Error {}
+    private static class ExpectedError extends Error {
+    }
 
     private static class CustomService implements RemoteService {
         @Override
         public DistributedObject createDistributedObject(String objectName) {
-            return new CustomClientProxy(SERVICE_NAME, objectName);
+            return new CustomClientProxy(SERVICE_NAME, objectName, null);
         }
 
         @Override
@@ -134,15 +135,15 @@ public class ProxyFactoryTest {
     private static class CustomProxyFactory implements ClientProxyFactory {
 
         @Override
-        public ClientProxy create(String id) {
-            return new CustomClientProxy(SERVICE_NAME, id);
+        public ClientProxy create(String id, ClientContext context) {
+            return new CustomClientProxy(SERVICE_NAME, id, context);
         }
     }
 
     private static class CustomClientProxy extends ClientProxy {
 
-        protected CustomClientProxy(String serviceName, String objectName) {
-            super(serviceName, objectName);
+        protected CustomClientProxy(String serviceName, String objectName, ClientContext context) {
+            super(serviceName, objectName, context);
         }
     }
 }

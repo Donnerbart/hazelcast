@@ -37,13 +37,17 @@ import java.util.concurrent.Future;
  */
 public abstract class ClientProxy implements DistributedObject {
 
+    protected final ClientContext context;
     protected final String name;
-    private final String serviceName;
-    private volatile ClientContext context;
 
-    protected ClientProxy(String serviceName, String name) {
-        this.serviceName = serviceName;
+    private final String serviceName;
+    private final SerializationService serializationService;
+
+    protected ClientProxy(String serviceName, String name, ClientContext context) {
+        this.context = context;
         this.name = name;
+        this.serviceName = serviceName;
+        this.serializationService = context.getSerializationService();
     }
 
     protected final String registerListener(ListenerMessageCodec codec, EventHandler handler) {
@@ -56,10 +60,6 @@ public abstract class ClientProxy implements DistributedObject {
 
     protected final ClientContext getContext() {
         return context;
-    }
-
-    protected final void setContext(ClientContext context) {
-        this.context = context;
     }
 
     protected final HazelcastClientInstanceImpl getClient() {
@@ -176,15 +176,15 @@ public abstract class ClientProxy implements DistributedObject {
     }
 
     protected Data toData(Object o) {
-        return getContext().getSerializationService().toData(o);
+        return serializationService.toData(o);
     }
 
     protected SerializationService getSerializationService() {
-        return getContext().getSerializationService();
+        return serializationService;
     }
 
     protected <T> T toObject(Object data) {
-        return getContext().getSerializationService().toObject(data);
+        return serializationService.toObject(data);
     }
 
     private String getInstanceName() {
