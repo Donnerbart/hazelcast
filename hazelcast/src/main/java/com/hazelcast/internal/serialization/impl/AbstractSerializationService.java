@@ -122,6 +122,14 @@ public abstract class AbstractSerializationService implements InternalSerializat
     }
 
     @Override
+    public Data toHeapData(Data data) {
+        if (data == null || data instanceof HeapData) {
+            return data;
+        }
+        return new HeapData(data.toByteArray());
+    }
+
+    @Override
     public byte[] toBytes(Object obj) {
         return toBytes(obj, 0, true, globalPartitioningStrategy);
     }

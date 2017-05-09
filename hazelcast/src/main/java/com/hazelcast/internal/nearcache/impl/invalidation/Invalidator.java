@@ -17,6 +17,7 @@
 package com.hazelcast.internal.nearcache.impl.invalidation;
 
 import com.hazelcast.core.IFunction;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.logging.ILogger;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.spi.EventRegistration;
@@ -28,7 +29,6 @@ import com.hazelcast.spi.partition.IPartitionService;
 import java.util.Collection;
 import java.util.UUID;
 
-import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
 import static java.lang.String.format;
 
 /**
@@ -43,6 +43,7 @@ public abstract class Invalidator {
     protected final EventService eventService;
     protected final MetaDataGenerator metaDataGenerator;
     protected final IPartitionService partitionService;
+    protected final InternalSerializationService serializationService;
     protected final IFunction<EventRegistration, Boolean> eventFilter;
 
     public Invalidator(String serviceName, IFunction<EventRegistration, Boolean> eventFilter, NodeEngine nodeEngine) {
@@ -51,6 +52,7 @@ public abstract class Invalidator {
         this.nodeEngine = nodeEngine;
         this.logger = nodeEngine.getLogger(getClass());
         this.partitionService = nodeEngine.getPartitionService();
+        this.serializationService = (InternalSerializationService) nodeEngine.getSerializationService();
         this.eventService = nodeEngine.getEventService();
         this.partitionCount = nodeEngine.getPartitionService().getPartitionCount();
         this.metaDataGenerator = new MetaDataGenerator(partitionCount);
@@ -99,7 +101,8 @@ public abstract class Invalidator {
             logger.finest(format("dataStructureName=%s, partition=%d, sequence=%d, uuid=%s",
                     dataStructureName, partitionId, sequence, partitionUuid));
         }
-        return new SingleNearCacheInvalidation(toHeapData(key), dataStructureName, sourceUuid, partitionUuid, sequence);
+        return new SingleNearCacheInvalidation(serializationService.toHeapData(key), dataStructureName, sourceUuid,
+                partitionUuid, sequence);
     }
 
     protected final Invalidation newClearInvalidation(String dataStructureName, String sourceUuid) {

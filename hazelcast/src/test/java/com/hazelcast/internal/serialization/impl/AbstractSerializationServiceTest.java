@@ -46,8 +46,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Serializable;
 
+import static com.hazelcast.test.HazelcastTestSupport.assertInstanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 @RunWith(HazelcastParallelClassRunner.class)
 @Category({QuickTest.class, ParallelTest.class})
@@ -63,6 +66,77 @@ public class AbstractSerializationServiceTest {
         DefaultSerializationServiceBuilder defaultSerializationServiceBuilder = new DefaultSerializationServiceBuilder();
         abstractSerializationService = defaultSerializationServiceBuilder
                 .setVersion(InternalSerializationService.VERSION_1).build();
+    }
+
+    @Test
+    public void toHeapData_whenHeapData() {
+        Data expected = abstractSerializationService.toData(5);
+        Data actual = abstractSerializationService.toHeapData(expected);
+        assertSame(expected, actual);
+    }
+
+    @Test
+    public void toHeapData_whenAnotherDataImpl() {
+        Data data = abstractSerializationService.toHeapData(new AnotherDataImpl());
+        assertInstanceOf(HeapData.class, data);
+    }
+
+    @Test
+    public void toHeapData_whenNull() {
+        Data data = abstractSerializationService.toHeapData(null);
+        assertNull(data);
+    }
+
+    private static class AnotherDataImpl implements Data {
+
+        @Override
+        public byte[] toByteArray() {
+            return new byte[0];
+        }
+
+        @Override
+        public int getType() {
+            return 0;
+        }
+
+        @Override
+        public void copyTo(byte[] dest, int destPos) {
+        }
+
+        @Override
+        public int totalSize() {
+            return 0;
+        }
+
+        @Override
+        public int dataSize() {
+            return 0;
+        }
+
+        @Override
+        public int getHeapCost() {
+            return 0;
+        }
+
+        @Override
+        public int getPartitionHash() {
+            return 0;
+        }
+
+        @Override
+        public boolean hasPartitionHash() {
+            return false;
+        }
+
+        @Override
+        public long hash64() {
+            return 0;
+        }
+
+        @Override
+        public boolean isPortable() {
+            return false;
+        }
     }
 
     @Test
@@ -93,10 +167,11 @@ public class AbstractSerializationServiceTest {
         assertEquals(original.value, found.value);
     }
 
-    static class ExternalizableValue implements Externalizable {
+    private static class ExternalizableValue implements Externalizable {
+
         int value;
 
-        ExternalizableValue() {
+        public ExternalizableValue() {
         }
 
         ExternalizableValue(int value) {
@@ -116,19 +191,20 @@ public class AbstractSerializationServiceTest {
 
     @Test
     public void testSerializable() {
-        SerializableleValue original = new SerializableleValue(100);
+        SerializableValue original = new SerializableValue(100);
 
         Data data = abstractSerializationService.toData(original);
-        SerializableleValue found = abstractSerializationService.toObject(data);
+        SerializableValue found = abstractSerializationService.toObject(data);
 
         assertNotNull(found);
         assertEquals(original.value, found.value);
     }
 
-    static class SerializableleValue implements Serializable {
+    private static class SerializableValue implements Serializable {
+
         int value;
 
-        SerializableleValue(int value) {
+        SerializableValue(int value) {
             this.value = value;
         }
     }
@@ -245,6 +321,7 @@ public class AbstractSerializationServiceTest {
     }
 
     public static class TypedBaseClass implements DataSerializable, TypedDataSerializable {
+
         private final BaseClass innerObj;
 
         public TypedBaseClass() {
@@ -261,14 +338,12 @@ public class AbstractSerializationServiceTest {
         }
 
         @Override
-        public void writeData(ObjectDataOutput out)
-                throws IOException {
+        public void writeData(ObjectDataOutput out) throws IOException {
             out.writeInt(innerObj.intField);
         }
 
         @Override
-        public void readData(ObjectDataInput in)
-                throws IOException {
+        public void readData(ObjectDataInput in) throws IOException {
             innerObj.intField = in.readInt();
         }
 
@@ -277,30 +352,23 @@ public class AbstractSerializationServiceTest {
             if (this == obj) {
                 return true;
             }
-
-            if (null == obj) {
-                return false;
-            }
-
             if (null == obj || !(getClass().isAssignableFrom(obj.getClass()))) {
                 return false;
             }
 
             TypedBaseClass rhs = (TypedBaseClass) obj;
-
             if (null == innerObj && null != rhs.innerObj || null != innerObj && null == rhs.innerObj) {
                 return false;
             }
-
             if (null == innerObj && null == rhs.innerObj) {
                 return true;
             }
-
             return innerObj.equals(rhs.innerObj);
         }
     }
 
     public static class BaseClass implements DataSerializable {
+
         private int intField;
         private String stringField;
 
@@ -318,15 +386,13 @@ public class AbstractSerializationServiceTest {
         }
 
         @Override
-        public void writeData(ObjectDataOutput out)
-                throws IOException {
+        public void writeData(ObjectDataOutput out) throws IOException {
             out.writeInt(intField);
             out.writeUTF(stringField);
         }
 
         @Override
-        public void readData(ObjectDataInput in)
-                throws IOException {
+        public void readData(ObjectDataInput in) throws IOException {
             intField = in.readInt();
             stringField = in.readUTF();
         }
@@ -341,12 +407,10 @@ public class AbstractSerializationServiceTest {
             }
 
             BaseClass baseClass = (BaseClass) o;
-
             if (intField != baseClass.intField) {
                 return false;
             }
             return stringField != null ? stringField.equals(baseClass.stringField) : baseClass.stringField == null;
-
         }
 
         @Override
@@ -358,6 +422,7 @@ public class AbstractSerializationServiceTest {
     }
 
     public static class ExtendedClass extends BaseClass {
+
         private long longField;
 
         public ExtendedClass() {
@@ -369,16 +434,14 @@ public class AbstractSerializationServiceTest {
         }
 
         @Override
-        public void writeData(ObjectDataOutput out)
-                throws IOException {
+        public void writeData(ObjectDataOutput out) throws IOException {
             super.writeData(out);
             out.writeLong(longField);
 
         }
 
         @Override
-        public void readData(ObjectDataInput in)
-                throws IOException {
+        public void readData(ObjectDataInput in) throws IOException {
             super.readData(in);
             longField = in.readLong();
         }
@@ -396,9 +459,7 @@ public class AbstractSerializationServiceTest {
             }
 
             ExtendedClass that = (ExtendedClass) o;
-
             return longField == that.longField;
-
         }
 
         @Override
@@ -409,11 +470,12 @@ public class AbstractSerializationServiceTest {
         }
     }
 
-    private class StringBufferSerializer implements StreamSerializer<StringBuffer> {
+    private static class StringBufferSerializer implements StreamSerializer<StringBuffer> {
+
         int typeId = 100000;
         private boolean fail;
 
-        public StringBufferSerializer(boolean fail) {
+        StringBufferSerializer(boolean fail) {
             this.fail = fail;
         }
 
@@ -424,7 +486,6 @@ public class AbstractSerializationServiceTest {
 
         @Override
         public void destroy() {
-
         }
 
         @Override
@@ -446,11 +507,10 @@ public class AbstractSerializationServiceTest {
         }
     }
 
-    private class TheOtherGlobalSerializer extends StringBufferSerializer {
+    private static class TheOtherGlobalSerializer extends StringBufferSerializer {
 
-        public TheOtherGlobalSerializer(boolean fail) {
+        TheOtherGlobalSerializer(boolean fail) {
             super(fail);
         }
     }
-
 }

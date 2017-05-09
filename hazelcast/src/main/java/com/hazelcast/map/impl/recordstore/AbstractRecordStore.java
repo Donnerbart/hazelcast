@@ -20,6 +20,7 @@ import com.hazelcast.concurrent.lock.LockService;
 import com.hazelcast.concurrent.lock.LockStore;
 import com.hazelcast.config.InMemoryFormat;
 import com.hazelcast.config.MapConfig;
+import com.hazelcast.internal.serialization.InternalSerializationService;
 import com.hazelcast.map.impl.EntryCostEstimator;
 import com.hazelcast.map.impl.MapContainer;
 import com.hazelcast.map.impl.MapService;
@@ -35,13 +36,11 @@ import com.hazelcast.query.impl.Indexes;
 import com.hazelcast.query.impl.QueryableEntry;
 import com.hazelcast.spi.DistributedObjectNamespace;
 import com.hazelcast.spi.NodeEngine;
-import com.hazelcast.spi.serialization.SerializationService;
 import com.hazelcast.util.Clock;
 
 import java.util.Collection;
 
 import static com.hazelcast.config.InMemoryFormat.NATIVE;
-import static com.hazelcast.internal.nearcache.impl.invalidation.ToHeapDataConverter.toHeapData;
 import static com.hazelcast.map.impl.ExpirationTimeSetter.calculateMaxIdleMillis;
 import static com.hazelcast.map.impl.ExpirationTimeSetter.calculateTTLMillis;
 import static com.hazelcast.map.impl.ExpirationTimeSetter.pickTTL;
@@ -58,7 +57,7 @@ abstract class AbstractRecordStore implements RecordStore<Record> {
     protected final RecordFactory recordFactory;
     protected final MapContainer mapContainer;
     protected final MapServiceContext mapServiceContext;
-    protected final SerializationService serializationService;
+    protected final InternalSerializationService serializationService;
     protected final MapDataStore<Data, Object> mapDataStore;
     protected final MapStoreContext mapStoreContext;
     protected final InMemoryFormat inMemoryFormat;
@@ -75,7 +74,7 @@ abstract class AbstractRecordStore implements RecordStore<Record> {
         this.partitionId = partitionId;
         this.mapServiceContext = mapContainer.getMapServiceContext();
         NodeEngine nodeEngine = mapServiceContext.getNodeEngine();
-        this.serializationService = nodeEngine.getSerializationService();
+        this.serializationService = (InternalSerializationService) nodeEngine.getSerializationService();
         this.name = mapContainer.getName();
         this.recordFactory = mapContainer.getRecordFactoryConstructor().createNew(null);
         this.inMemoryFormat = mapContainer.getMapConfig().getInMemoryFormat();
@@ -173,7 +172,7 @@ abstract class AbstractRecordStore implements RecordStore<Record> {
 
     protected Object copyToHeap(Object object) {
         if (object instanceof Data) {
-            return toHeapData(((Data) object));
+            return serializationService.toHeapData(((Data) object));
         } else {
             return object;
         }

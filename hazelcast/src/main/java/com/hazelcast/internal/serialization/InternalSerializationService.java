@@ -33,6 +33,14 @@ public interface InternalSerializationService extends SerializationService, Disp
     byte VERSION_1 = 1;
 
     /**
+     * Converts any {@link Data} implementation explicitly to {@link com.hazelcast.internal.serialization.impl.HeapData}.
+     *
+     * @param data the {@link Data} instance to convert to {@link com.hazelcast.internal.serialization.impl.HeapData}
+     * @return the on-heap representation of the instance or {@code null} if the given instance is {@code null}
+     */
+    Data toHeapData(Data data);
+
+    /**
      * Writes the obj to a byte array. This call is exactly the same as calling {@link #toData(Object)} and
      * then calling {@link Data#toByteArray()}. But it doesn't force a HeapData object being created.
      */
@@ -79,5 +87,4 @@ public interface InternalSerializationService extends SerializationService, Disp
     ByteOrder getByteOrder();
 
     byte getVersion();
-
 }
