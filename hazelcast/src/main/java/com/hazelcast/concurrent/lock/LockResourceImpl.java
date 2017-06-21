@@ -40,19 +40,20 @@ import static com.hazelcast.concurrent.lock.LockDataSerializerHook.LOCK_RESOURCE
 final class LockResourceImpl implements IdentifiedDataSerializable, LockResource {
 
     private Data key;
-    private String owner;
-    private long threadId;
-    private long referenceId;
-    private int lockCount;
-    private long expirationTime = -1;
-    private long acquireTime = -1L;
-    private boolean transactional;
-    private boolean blockReads;
-    private boolean local;
+    private LockStoreImpl lockStore;
     private Map<String, WaitersInfo> waiters;
     private Set<ConditionKey> conditionKeys;
     private List<AwaitOperation> expiredAwaitOps;
-    private LockStoreImpl lockStore;
+
+    private int lockCount;
+    private String owner;
+    private long threadId;
+    private long referenceId;
+    private long acquireTime = -1L;
+    private long expirationTime = -1;
+    private boolean transactional;
+    private boolean blockReads;
+    private boolean local;
 
     // version is stored locally
     // and incremented by 1 for each lock and extendLease operation
@@ -84,11 +85,11 @@ final class LockResourceImpl implements IdentifiedDataSerializable, LockResource
     boolean lock(String owner, long threadId, long referenceId, long leaseTime, boolean transactional,
                  boolean blockReads, boolean local) {
         if (lockCount == 0) {
+            this.lockCount = 1;
             this.owner = owner;
             this.threadId = threadId;
             this.referenceId = referenceId;
-            lockCount = 1;
-            acquireTime = Clock.currentTimeMillis();
+            this.acquireTime = Clock.currentTimeMillis();
             setExpirationTime(leaseTime);
             this.transactional = transactional;
             this.blockReads = blockReads;
@@ -98,8 +99,8 @@ final class LockResourceImpl implements IdentifiedDataSerializable, LockResource
             if (!transactional && !local && this.referenceId == referenceId) {
                 return true;
             }
+            this.lockCount++;
             this.referenceId = referenceId;
-            lockCount++;
             setExpirationTime(leaseTime);
             this.transactional = transactional;
             this.blockReads = blockReads;
@@ -112,11 +113,6 @@ final class LockResourceImpl implements IdentifiedDataSerializable, LockResource
     /**
      * This method is used to extend the already locked resource in the prepare phase of the transactions.
      * It also marks the resource true to block reads.
-     *
-     * @param caller
-     * @param threadId
-     * @param leaseTime
-     * @return
      */
     boolean extendLeaseTime(String caller, long threadId, long leaseTime) {
         if (!isLockedBy(caller, threadId)) {
@@ -202,11 +198,8 @@ final class LockResourceImpl implements IdentifiedDataSerializable, LockResource
     /**
      * Signal a waiter.
      * <p>
-     * We need to pass objectName because the name in {#objectName} is unrealible.
+     * We need to pass objectName because the name in {#objectName} is unreliable.
      *
-     * @param conditionId
-     * @param maxSignalCount
-     * @param objectName
      * @see InternalLockNamespace
      */
     public void signal(String conditionId, int maxSignalCount, String objectName) {
@@ -325,7 +318,7 @@ final class LockResourceImpl implements IdentifiedDataSerializable, LockResource
      * Local locks are local to the partition and replicaIndex where they have been acquired.
      * That is the reason they are removed on any partition migration on the destination.
      *
-     * @returns true if the lock is local, false otherwise
+     * @return {@code true} if the lock is local, {@code false} otherwise
      */
     @Override
     public boolean isLocal() {
