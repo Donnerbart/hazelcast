@@ -1754,6 +1754,7 @@ public class XmlConfigBuilder extends AbstractConfigBuilder implements ConfigBui
         MergePolicyConfig mergePolicyConfig = new MergePolicyConfig();
         String policyString = getTextContent(node).trim();
         mergePolicyConfig.setPolicy(policyString);
+
         final String att = getAttribute(node, "batch-size");
         if (att != null) {
             mergePolicyConfig.setBatchSize(getIntegerValue("batch-size", att));

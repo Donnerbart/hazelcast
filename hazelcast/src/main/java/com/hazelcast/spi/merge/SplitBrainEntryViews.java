@@ -22,6 +22,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.Data;
 import com.hazelcast.nio.serialization.IdentifiedDataSerializable;
+import com.hazelcast.scheduledexecutor.impl.ScheduledTaskDescriptor;
 import com.hazelcast.spi.SplitBrainMergeEntryView;
 
 import java.io.IOException;
@@ -41,6 +42,11 @@ public final class SplitBrainEntryViews {
                 .setCreationTime(item.getCreationTime());
     }
 
+    public static SplitBrainMergeEntryView<String, ScheduledTaskDescriptor> createSplitBrainMergeEntryView(ScheduledTaskDescriptor task) {
+        return new SimpleSplitBrainEntryView<String, ScheduledTaskDescriptor>()
+                .setKey(task.getDefinition().getName())
+                .setValue(task);
+    }
     /**
      * SimpleSplitBrainEntryView is a mutable implementation of {@link SplitBrainMergeEntryView}.
      *
@@ -52,6 +58,7 @@ public final class SplitBrainEntryViews {
 
         private K key;
         private V value;
+
         private long cost = -1;
         private long creationTime = -1;
         private long expirationTime;

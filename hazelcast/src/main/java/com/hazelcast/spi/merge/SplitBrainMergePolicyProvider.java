@@ -75,6 +75,7 @@ public final class SplitBrainMergePolicyProvider {
         if (className == null) {
             throw new InvalidConfigurationException("Class name is mandatory!");
         }
+
         return getOrPutIfAbsent(mergePolicyMap, className, policyConstructorFunction);
     }
 
