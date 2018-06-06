@@ -88,7 +88,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testOfferTake() throws ExecutionException, InterruptedException {
+    public void testOfferTake() throws InterruptedException {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         final HazelcastInstance owner = factory.newHazelcastInstance();
         final HazelcastInstance backup = factory.newHazelcastInstance();
@@ -193,7 +193,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTransactionalOfferPoll1() throws Exception {
+    public void testTransactionalOfferPoll1() {
         Config config = new Config();
         final int insCount = 4;
         final String name = "defQueue";
@@ -217,7 +217,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTransactionalOfferPoll2() throws Exception {
+    public void testTransactionalOfferPoll2() {
         Config config = new Config();
         final int insCount = 4;
         final String name0 = "defQueue0";
@@ -257,7 +257,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testQueueWithMap() throws Exception {
+    public void testQueueWithMap() {
         Config config = new Config();
         final int insCount = 4;
         final String queueName = "defQueue";
@@ -282,7 +282,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testRollbackQueue() throws Throwable {
+    public void testRollbackQueue() {
         final TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(4);
         final HazelcastInstance h1 = factory.newHazelcastInstance();
 
@@ -301,7 +301,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
     }
 
     @Test(expected = TransactionNotActiveException.class)
-    public void testTxnQueueOuterTransaction() throws Throwable {
+    public void testTxnQueueOuterTransaction() {
         final HazelcastInstance h1 = createHazelcastInstance();
 
         final TransactionContext transactionContext = h1.newTransactionContext();
@@ -362,7 +362,7 @@ public class TransactionQueueTest extends HazelcastTestSupport {
 
     // https://github.com/hazelcast/hazelcast/issues/3796
     private void testIssue859And863(final HazelcastInstance instance1, final HazelcastInstance instance2,
-                                    final String inQueueName, final String outQueueName) throws Exception {
+                                    final String inQueueName, final String outQueueName) {
         final int numberOfMessages = 3000;
         final AtomicInteger counter = new AtomicInteger();
 
@@ -556,14 +556,14 @@ public class TransactionQueueTest extends HazelcastTestSupport {
         final IQueue<Integer> queue2 = instance.getQueue(name);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(1, queue2.size());
             }
         });
 
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(1, queue2.size());
             }
         }, 3);

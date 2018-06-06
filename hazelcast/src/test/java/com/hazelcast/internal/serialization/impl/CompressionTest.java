@@ -120,7 +120,7 @@ public class CompressionTest {
         }
 
         @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        public void readExternal(ObjectInput in) throws IOException {
             x = in.readInt();
         }
     }

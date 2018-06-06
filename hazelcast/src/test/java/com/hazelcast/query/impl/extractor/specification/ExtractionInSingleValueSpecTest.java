@@ -69,7 +69,7 @@ public class ExtractionInSingleValueSpecTest extends AbstractExtractionTest {
     );
 
     private static final Person HUNT_WITH_NULLS = person(null,
-            limb(null, new ArrayList<String>(), new Finger[]{})
+            limb(null, new ArrayList<String>())
     );
 
     protected Configurator getInstanceConfigurator() {

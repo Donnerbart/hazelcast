@@ -210,7 +210,7 @@ public class AddressUtilTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testFixScopeIdAndGetInetAddress_whenLinkLocalAddress() throws SocketException, UnknownHostException {
+    public void testFixScopeIdAndGetInetAddress_whenLinkLocalAddress() throws SocketException {
         // refer to https://github.com/hazelcast/hazelcast/pull/13069#issuecomment-388719847
         assumeThatJDK8();
 
@@ -222,7 +222,7 @@ public class AddressUtilTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testFixScopeIdAndGetInetAddress_whenLinkLocalAddress_withNoInterfaceBind() throws SocketException, UnknownHostException {
+    public void testFixScopeIdAndGetInetAddress_whenLinkLocalAddress_withNoInterfaceBind() throws SocketException {
         // refer to https://github.com/hazelcast/hazelcast/pull/13069#issuecomment-388719847
         assumeThatJDK8();
 

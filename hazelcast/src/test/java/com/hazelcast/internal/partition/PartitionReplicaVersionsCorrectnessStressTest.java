@@ -110,8 +110,7 @@ public class PartitionReplicaVersionsCorrectnessStressTest extends AbstractParti
                                          List<HazelcastInstance> survivingInstances,
                                          Map<Integer, PartitionReplicaVersionsView> replicaVersionsByPartitionId,
                                          Map<Integer, List<Address>> partitionReplicaAddresses,
-                                         Map<Integer, Integer> minSurvivingReplicaIndexByPartitionId)
-            throws InterruptedException {
+                                         Map<Integer, Integer> minSurvivingReplicaIndexByPartitionId) {
         for (HazelcastInstance instance : survivingInstances) {
             Node node = getNode(instance);
             Address address = node.getThisAddress();

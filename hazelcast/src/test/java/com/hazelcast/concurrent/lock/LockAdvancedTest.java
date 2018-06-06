@@ -108,7 +108,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
         testLockEviction(false);
     }
 
-    private void testLockEviction(boolean localKey) throws Exception {
+    private void testLockEviction(boolean localKey) {
         final TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(2);
         final HazelcastInstance instance1 = nodeFactory.newHazelcastInstance();
         final HazelcastInstance instance2 = nodeFactory.newHazelcastInstance();
@@ -248,7 +248,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
     // ====================== tests to make sure the lock can deal with cluster member failure ====================
 
     @Test(timeout = 100000)
-    public void testLockOwnerDies() throws Exception {
+    public void testLockOwnerDies() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(2);
         HazelcastInstance lockOwner = nodeFactory.newHazelcastInstance();
         final HazelcastInstance instance1 = nodeFactory.newHazelcastInstance();
@@ -272,7 +272,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 100000)
-    public void testLockOwnerDies_withMultipleLocks() throws Exception {
+    public void testLockOwnerDies_withMultipleLocks() {
         int lockCount = 10;
 
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(2);
@@ -384,7 +384,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testLockInterruptibly() throws Exception {
+    public void testLockInterruptibly() {
         Config config = new Config();
         final TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(1);
         final HazelcastInstance h1 = nodeFactory.newHazelcastInstance(config);
@@ -421,7 +421,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertFalse("Lock should be released after lease expires!", lock.isLocked());
             }
         }, 30);
@@ -440,7 +440,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertFalse("Lock should be released after lease expires!", lock.isLocked());
             }
         }, 30);
@@ -498,7 +498,7 @@ public class LockAdvancedTest extends HazelcastTestSupport {
         final ILock lock = hz.getLock(name);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertFalse("Lock owned by dead member should have been released!", lock.isLocked());
             }
         }, 30);

@@ -1001,7 +1001,7 @@ public class MapReduceTest extends HazelcastTestSupport {
             }
 
             JobTracker tracker = h1.getJobTracker(randomString());
-            Job<Integer, Employee> job = tracker.newJob(KeyValueSource.<Integer, Employee>fromMap(map));
+            Job<Integer, Employee> job = tracker.newJob(KeyValueSource.fromMap(map));
 
             ICompletableFuture<Map<Integer, Set<Employee>>> future = job
                     .mapper(new ModIdMapper(2))
@@ -1018,7 +1018,7 @@ public class MapReduceTest extends HazelcastTestSupport {
     }
 
     static KeyValueSource<Integer, Integer> integerKvSource(IMap<Integer, Integer> m) {
-        return KeyValueSource.<Integer, Integer>fromMap(m);
+        return KeyValueSource.fromMap(m);
     }
 
     public static class ModIdMapper implements Mapper<Integer, Employee, Integer, Employee> {

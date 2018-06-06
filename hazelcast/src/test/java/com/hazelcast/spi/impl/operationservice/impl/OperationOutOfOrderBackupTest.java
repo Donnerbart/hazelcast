@@ -118,7 +118,7 @@ public class OperationOutOfOrderBackupTest extends HazelcastTestSupport {
                                              final long[] expectedReplicaVersions) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 long[] backupReplicaVersions = getDefaultReplicaVersions(node, partitionId);
                 assertArrayEquals(expectedReplicaVersions, backupReplicaVersions);
             }

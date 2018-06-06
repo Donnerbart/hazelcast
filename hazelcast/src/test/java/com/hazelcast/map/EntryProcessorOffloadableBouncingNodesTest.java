@@ -177,11 +177,7 @@ public class EntryProcessorOffloadableBouncingNodesTest extends HazelcastTestSup
 
             SimpleValue that = (SimpleValue) o;
 
-            if (i != that.i) {
-                return false;
-            }
-
-            return true;
+            return i == that.i;
         }
 
         @Override

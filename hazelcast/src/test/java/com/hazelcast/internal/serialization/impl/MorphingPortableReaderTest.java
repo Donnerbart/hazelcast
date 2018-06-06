@@ -52,7 +52,7 @@ public class MorphingPortableReaderTest {
 
     @Before
     public void before() throws Exception {
-        service1 = (SerializationServiceV1) new DefaultSerializationServiceBuilder()
+        service1 = new DefaultSerializationServiceBuilder()
                 .addPortableFactory(TestSerializationConstants.PORTABLE_FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new MorphingBasePortable();
@@ -60,7 +60,7 @@ public class MorphingPortableReaderTest {
 
                 }).build();
 
-        service2 = (SerializationServiceV1) new DefaultSerializationServiceBuilder()
+        service2 = new DefaultSerializationServiceBuilder()
                 .addPortableFactory(TestSerializationConstants.PORTABLE_FACTORY_ID, new PortableFactory() {
                     public Portable create(int classId) {
                         return new MorphingPortable();
@@ -75,7 +75,7 @@ public class MorphingPortableReaderTest {
     }
 
     @After
-    public void after() throws Exception {
+    public void after() {
         service1.dispose();
         service2.dispose();
     }

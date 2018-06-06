@@ -1364,7 +1364,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
         }
 
         assertTrueEventually(new AssertTask() {
-            public void run() throws Exception {
+            public void run() {
                 List<Integer> actualOrder = processorMap.get(key);
                 assertEquals("failed to execute all entry processor tasks", maxTasks, actualOrder.size());
             }
@@ -1516,7 +1516,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
         final int expectedApplyCount = inMemoryFormat == NATIVE ? 0 : 2;
         AssertTask task = new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 try {
                     map.set(1, 1);
 
@@ -1581,7 +1581,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
 
         AssertTask task = new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 long entryCountOnNode1 = getTotalOwnedAndBackupEntryCount(instance1.getMap(MAP_NAME));
                 long entryCountOnNode2 = getTotalOwnedAndBackupEntryCount(instance2.getMap(MAP_NAME));
                 assertEquals("EntryProcess should run on async backup and should create entry there",
@@ -1594,7 +1594,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
 
 
     @Test
-    public void receivesEntryRemovedEvent_onPostProcessingMapStore_after_executeOnKey() throws Exception {
+    public void receivesEntryRemovedEvent_onPostProcessingMapStore_after_executeOnKey() {
         Config config = getConfig();
         config.getMapConfig(MAP_NAME)
                 .getMapStoreConfig().setEnabled(true).setImplementation(new TestPostProcessingMapStore());
@@ -1622,7 +1622,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void receivesEntryRemovedEvent_onPostProcessingMapStore_after_executeOnEntries() throws Exception {
+    public void receivesEntryRemovedEvent_onPostProcessingMapStore_after_executeOnEntries() {
         Config config = getConfig();
         config.getMapConfig(MAP_NAME)
                 .getMapStoreConfig().setEnabled(true).setImplementation(new TestPostProcessingMapStore());
@@ -1755,11 +1755,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
 
             SimpleValue that = (SimpleValue) o;
 
-            if (i != that.i) {
-                return false;
-            }
-
-            return true;
+            return i == that.i;
         }
 
         @Override
@@ -1787,7 +1783,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void issue9798_indexNotUpdatedWithObjectFormat_onKey() throws Exception {
+    public void issue9798_indexNotUpdatedWithObjectFormat_onKey() {
         IMap<Long, MyData> testMap = setupImapForEntryProcessorWithIndex();
         testMap.set(1L, new MyData(10));
 
@@ -1813,7 +1809,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void issue9798_indexNotUpdatedWithObjectFormat_onKeys() throws Exception {
+    public void issue9798_indexNotUpdatedWithObjectFormat_onKeys() {
         IMap<Long, MyData> testMap = setupImapForEntryProcessorWithIndex();
         testMap.set(1L, new MyData(10));
         testMap.set(2L, new MyData(20));
@@ -1829,7 +1825,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void issue9798_indexNotUpdatedWithObjectFormat_onEntries() throws Exception {
+    public void issue9798_indexNotUpdatedWithObjectFormat_onEntries() {
         IMap<Long, MyData> testMap = setupImapForEntryProcessorWithIndex();
         testMap.set(1L, new MyData(10));
         testMap.set(2L, new MyData(20));
@@ -1844,7 +1840,7 @@ public class EntryProcessorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void issue9798_indexNotUpdatedWithObjectFormat_onEntriesWithPredicate() throws Exception {
+    public void issue9798_indexNotUpdatedWithObjectFormat_onEntriesWithPredicate() {
         IMap<Long, MyData> testMap = setupImapForEntryProcessorWithIndex();
         testMap.set(1L, new MyData(10));
         testMap.set(2L, new MyData(20));

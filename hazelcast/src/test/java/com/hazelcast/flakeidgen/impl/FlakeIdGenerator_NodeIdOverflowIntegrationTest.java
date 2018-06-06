@@ -46,7 +46,7 @@ public class FlakeIdGenerator_NodeIdOverflowIntegrationTest {
     }
 
     @Test
-    public void when_memberOutOfRangeNodeId_then_theOtherMemberUsed() throws Exception {
+    public void when_memberOutOfRangeNodeId_then_theOtherMemberUsed() {
         HazelcastInstance instance1 = factory.newHazelcastInstance();
         HazelcastInstance instance2 = factory.newHazelcastInstance();
         assignOutOfRangeNodeId(instance2);

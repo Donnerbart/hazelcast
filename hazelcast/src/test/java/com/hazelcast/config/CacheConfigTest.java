@@ -499,7 +499,7 @@ public class CacheConfigTest extends HazelcastTestSupport {
         CacheManager cacheManager = Caching.getCachingProvider().getCacheManager();
 
         try {
-            cacheManager.createCache(cacheName, (Configuration<Object, Object>) null);
+            cacheManager.createCache(cacheName, null);
             fail("NullPointerException expected");
         } catch (NullPointerException expected) {
             ignore(expected);
@@ -576,7 +576,7 @@ public class CacheConfigTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertNotNull(cacheService2.getCacheConfig(fullCacheName));
             }
         });

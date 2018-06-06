@@ -424,7 +424,7 @@ public class BounceMemberRule implements TestRule {
                 Future future = iterator.next();
                 try {
                     // if the test failed, try to locate immediately the future that is done and will throw an exception
-                    if ((hasTestFailed && future.isDone()) || !hasTestFailed) {
+                    if (!hasTestFailed || future.isDone()) {
                         future.get(1, SECONDS);
                         iterator.remove();
                     }
@@ -470,10 +470,8 @@ public class BounceMemberRule implements TestRule {
                 }
             }
 
-            if (testDriverType == ALWAYS_UP_MEMBER) {
-                assert driversCount == 1
-                        : "Driver count can only be 1 when driver type is ALWAYS_UP_MEMBER but found " + driversCount;
-            }
+            assert testDriverType != ALWAYS_UP_MEMBER || driversCount == 1
+                    : "Driver count can only be 1 when driver type is ALWAYS_UP_MEMBER but found " + driversCount;
 
             if (driverFactory == null) {
                 // choose a default driver factory

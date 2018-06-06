@@ -124,8 +124,7 @@ public class CachePartitionLostListenerStressTest extends AbstractPartitionLostL
             for (final EventCollectingCachePartitionLostListener listener : listeners) {
                 assertTrueAllTheTime(new AssertTask() {
                     @Override
-                    public void run()
-                            throws Exception {
+                    public void run() {
                         assertTrue(listener.getEvents().isEmpty());
                     }
                 }, 1);
@@ -159,8 +158,7 @@ public class CachePartitionLostListenerStressTest extends AbstractPartitionLostL
                                                      final Map<Integer, Integer> survivingPartitions) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 if (index < numberOfNodesToCrash) {
                     assertLostPartitions(log, listener, survivingPartitions);
                 } else {

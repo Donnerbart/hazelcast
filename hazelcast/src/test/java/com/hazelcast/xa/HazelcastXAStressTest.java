@@ -54,7 +54,7 @@ public class HazelcastXAStressTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testCommitConcurrently() throws InterruptedException, XAException {
+    public void testCommitConcurrently() {
         int count = 10000;
         String name = randomString();
         ExecutorService executorService = Executors.newFixedThreadPool(5);

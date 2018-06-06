@@ -203,11 +203,7 @@ public class SerializationTest extends HazelcastTestSupport {
             if (k != that.k) {
                 return false;
             }
-            if (s != null ? !s.equals(that.s) : that.s != null) {
-                return false;
-            }
-
-            return true;
+            return s != null ? s.equals(that.s) : that.s == null;
         }
 
         @Override
@@ -224,11 +220,11 @@ public class SerializationTest extends HazelcastTestSupport {
                 new SerializerConfig().setTypeClass(SingletonValue.class)
                         .setImplementation(new StreamSerializer<SingletonValue>() {
                             @Override
-                            public void write(ObjectDataOutput out, SingletonValue v) throws IOException {
+                            public void write(ObjectDataOutput out, SingletonValue v) {
                             }
 
                             @Override
-                            public SingletonValue read(ObjectDataInput in) throws IOException {
+                            public SingletonValue read(ObjectDataInput in) {
                                 return new SingletonValue();
                             }
 
@@ -271,7 +267,7 @@ public class SerializationTest extends HazelcastTestSupport {
     public void testSharedJavaSerialization() {
         SerializationService ss = new DefaultSerializationServiceBuilder().setEnableSharedObject(true).build();
         Data data = ss.toData(new Foo());
-        Foo foo = (Foo) ss.toObject(data);
+        Foo foo = ss.toObject(data);
 
         assertTrue("Objects are not identical!", foo == foo.getBar().getFoo());
     }
@@ -413,7 +409,7 @@ public class SerializationTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        public void readExternal(ObjectInput in) throws IOException {
             value = in.readUTF();
         }
     }
@@ -651,7 +647,7 @@ public class SerializationTest extends HazelcastTestSupport {
         private static final DummyInvocationHandler INSTANCE = new DummyInvocationHandler();
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        public Object invoke(Object proxy, Method method, Object[] args) {
             return null;
         }
     }

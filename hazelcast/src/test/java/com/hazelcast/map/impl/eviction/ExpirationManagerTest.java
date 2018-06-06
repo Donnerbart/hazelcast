@@ -107,7 +107,7 @@ public class ExpirationManagerTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTaskPeriodSeconds_throwsIllegalArgumentException_whenNotPositive() throws Exception {
+    public void testTaskPeriodSeconds_throwsIllegalArgumentException_whenNotPositive() {
         String previous = getProperty(PROP_TASK_PERIOD_SECONDS);
         try {
             setProperty(PROP_TASK_PERIOD_SECONDS, valueOf(0));
@@ -264,7 +264,7 @@ public class ExpirationManagerTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 int expirationCount = expirationCounter.get();
                 assertEquals(format("Expecting 1 expiration but found:%d", expirationCount), 1, expirationCount);
             }
@@ -304,7 +304,7 @@ public class ExpirationManagerTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 int expirationCount = expirationCounter.get();
                 assertEquals(format("Expecting 1 expiration but found:%d", expirationCount), 1, expirationCount);
             }

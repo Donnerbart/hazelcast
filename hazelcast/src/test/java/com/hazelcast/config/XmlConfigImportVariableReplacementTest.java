@@ -421,7 +421,7 @@ public class XmlConfigImportVariableReplacementTest {
 
 
     @Test(expected = ConfigurationException.class)
-    public void testMissingReplacement() throws Exception {
+    public void testMissingReplacement() {
         String xml = HAZELCAST_START_TAG
                 + "    <config-replacers>\n"
                 + "        <replacer class-name='" + EncryptionReplacer.class.getName() + "'/>\n"
@@ -434,7 +434,7 @@ public class XmlConfigImportVariableReplacementTest {
     }
 
     @Test
-    public void testReplacerProperties() throws Exception {
+    public void testReplacerProperties() {
         String xml = HAZELCAST_START_TAG
                 + "    <config-replacers fail-if-value-missing='false'>\n"
                 + "        <replacer class-name='" + TestReplacer.class.getName() + "'>\n"
@@ -461,7 +461,7 @@ public class XmlConfigImportVariableReplacementTest {
      * behavior, as if {@code fail-if-value-missing} attribute is {@code false}).
      */
     @Test
-    public void testNoConfigReplacersMissingProperties() throws Exception {
+    public void testNoConfigReplacersMissingProperties() {
         String xml = HAZELCAST_START_TAG
                 + "    <group>\n"
                 + "        <name>${noSuchPropertyAvailable}</name>\n"

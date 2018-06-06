@@ -118,8 +118,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         map.put(1, new Person("a", 75));
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 1);
@@ -132,8 +131,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then querycache does not contain any elements
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 0);
@@ -148,8 +146,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 1
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 1);
@@ -164,8 +161,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 0
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 0);
@@ -179,8 +175,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 1
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 1);
@@ -194,8 +189,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 0
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 0);
@@ -209,8 +203,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 1
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 1);
@@ -224,8 +217,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
         // then size of querycache is 0
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return queryCache.size();
             }
         }, 0);
@@ -237,7 +229,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call() throws Exception {
+            public Integer call() {
                 return queryCache.keySet().size();
             }
         }, 1);
@@ -249,7 +241,7 @@ public class QueryCacheBasicTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call() throws Exception {
+            public Integer call() {
                 return queryCache.entrySet().size();
             }
         }, 1);

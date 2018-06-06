@@ -59,7 +59,7 @@ public class MulticastDeserializationTest {
 
     @Before
     @After
-    public void killAllHazelcastInstances() throws IOException {
+    public void killAllHazelcastInstances() {
         TestDeserialized.IS_DESERIALIZED = false;
         HazelcastInstanceFactory.terminateAll();
     }

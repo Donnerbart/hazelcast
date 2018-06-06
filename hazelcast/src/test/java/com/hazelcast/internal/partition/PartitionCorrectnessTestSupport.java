@@ -255,7 +255,7 @@ public abstract class PartitionCorrectnessTestSupport extends HazelcastTestSuppo
 
     private <N> void assertPartitionVersionsAndBackupValues(int actualBackupCount, TestAbstractMigrationAwareService<N> service,
                                                             Node node, InternalPartition[] partitions, N name,
-                                                            boolean allowDirty) throws InterruptedException {
+                                                            boolean allowDirty) {
         Address thisAddress = node.getThisAddress();
         ServiceNamespace namespace = service.getNamespace(name);
 

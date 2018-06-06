@@ -127,7 +127,7 @@ public class TcpIpConnectionManager_TransmitTest extends TcpIpConnection_Abstrac
         assertTrue(result);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertContains(packetsB, packet);
             }
         });
@@ -144,7 +144,7 @@ public class TcpIpConnectionManager_TransmitTest extends TcpIpConnection_Abstrac
         assertTrue(result);
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertContains(packetsB, packet);
             }
         });

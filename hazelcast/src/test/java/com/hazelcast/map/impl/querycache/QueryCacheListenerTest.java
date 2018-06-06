@@ -118,7 +118,7 @@ public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
 
         AssertTask task = new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(0, cache.size());
             }
         };
@@ -163,7 +163,7 @@ public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 // expecting at least 1 event
                 assertTrue(clearAllEventCount.get() >= 1);
                 assertEquals(0, queryCache.size());
@@ -231,7 +231,7 @@ public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
     private void assertQueryCacheSizeEventually(final int expected, final QueryCache cache) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(expected, cache.size());
             }
         }, 10);
@@ -249,7 +249,7 @@ public class QueryCacheListenerTest extends AbstractQueryCacheTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(putCount, cache.size());
                 if (includeValue) {
                     assertTrue("There should not be any null value", listener.hasValue);

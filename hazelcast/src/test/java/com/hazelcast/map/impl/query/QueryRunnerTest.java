@@ -75,7 +75,7 @@ public class QueryRunnerTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void runFullQuery() throws ExecutionException, InterruptedException {
+    public void runFullQuery() {
         Predicate predicate = Predicates.equal("this", value);
         Query query = Query.of().mapName(map.getName()).predicate(predicate).iterationType(IterationType.ENTRY).build();
         QueryResult result = (QueryResult) queryRunner.runIndexOrPartitionScanQueryOnOwnedPartitions(query);
@@ -85,7 +85,7 @@ public class QueryRunnerTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void runPartitionScanQueryOnSinglePartition() throws ExecutionException, InterruptedException {
+    public void runPartitionScanQueryOnSinglePartition() {
         Predicate predicate = Predicates.equal("this", value);
         Query query = Query.of().mapName(map.getName()).predicate(predicate).iterationType(IterationType.ENTRY).build();
         QueryResult result = (QueryResult) queryRunner.runPartitionScanQueryOnGivenOwnedPartition(query, partitionId);

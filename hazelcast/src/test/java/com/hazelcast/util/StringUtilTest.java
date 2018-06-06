@@ -61,42 +61,42 @@ public class StringUtilTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void getterIntoProperty_whenNull_returnNull() throws Exception {
+    public void getterIntoProperty_whenNull_returnNull() {
         assertEquals("", StringUtil.getterIntoProperty(""));
     }
 
     @Test
-    public void getterIntoProperty_whenEmpty_returnEmptyString() throws Exception {
+    public void getterIntoProperty_whenEmpty_returnEmptyString() {
         assertEquals("", StringUtil.getterIntoProperty(""));
     }
 
     @Test
-    public void getterIntoProperty_whenGet_returnUnchanged() throws Exception {
+    public void getterIntoProperty_whenGet_returnUnchanged() {
         assertEquals("get", StringUtil.getterIntoProperty("get"));
     }
 
     @Test
-    public void getterIntoProperty_whenGetFoo_returnFoo() throws Exception {
+    public void getterIntoProperty_whenGetFoo_returnFoo() {
         assertEquals("foo", StringUtil.getterIntoProperty("getFoo"));
     }
 
     @Test
-    public void getterIntoProperty_whenGetF_returnF() throws Exception {
+    public void getterIntoProperty_whenGetF_returnF() {
         assertEquals("f", StringUtil.getterIntoProperty("getF"));
     }
 
     @Test
-    public void getterIntoProperty_whenGetNumber_returnNumber() throws Exception {
+    public void getterIntoProperty_whenGetNumber_returnNumber() {
         assertEquals("8", StringUtil.getterIntoProperty("get8"));
     }
 
     @Test
-    public void getterIntoProperty_whenPropertyIsLowerCase_DoNotChange() throws Exception {
+    public void getterIntoProperty_whenPropertyIsLowerCase_DoNotChange() {
         assertEquals("getfoo", StringUtil.getterIntoProperty("getfoo"));
     }
 
     @Test
-    public void testSplitByComma() throws Exception {
+    public void testSplitByComma() {
         assertNull(StringUtil.splitByComma(null, true));
         assertArrayEquals(arr(""), StringUtil.splitByComma("", true));
         assertArrayEquals(arr(""), StringUtil.splitByComma(" ", true));
@@ -109,14 +109,14 @@ public class StringUtilTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testArrayIntersection() throws Exception {
+    public void testArrayIntersection() {
         assertArrayEquals(arr("test"), StringUtil.intersection(arr("x", "test", "y", "z"), arr("a", "b", "test")));
         assertArrayEquals(arr(""), StringUtil.intersection(arr("", "z"), arr("a", "")));
         assertArrayEquals(arr(), StringUtil.intersection(arr("", "z"), arr("a")));
     }
 
     @Test
-    public void testArraySubraction() throws Exception {
+    public void testArraySubraction() {
         assertNull(StringUtil.subraction(null, arr("a", "test", "b", "a")));
         assertArrayEquals(arr("a", "test", "b", "a"), StringUtil.subraction(arr("a", "test", "b", "a"), null));
         assertArrayEquals(arr("test"), StringUtil.subraction(arr("a", "test", "b", "a"), arr("a", "b")));
@@ -126,7 +126,7 @@ public class StringUtilTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testEqualsIgnoreCase() throws Exception {
+    public void testEqualsIgnoreCase() {
         assertFalse(StringUtil.equalsIgnoreCase(null, null));
         assertFalse(StringUtil.equalsIgnoreCase(null, "a"));
         assertFalse(StringUtil.equalsIgnoreCase("a", null));

@@ -319,7 +319,7 @@ public class ScheduledExecutorServiceBasicTest extends ScheduledExecutorServiceT
     }
 
     @Test
-    public void schedule_withMapChanges_durable() throws Exception {
+    public void schedule_withMapChanges_durable() {
         HazelcastInstance[] instances = createClusterWithCount(2);
         IMap<String, Integer> map = instances[1].getMap("map");
         for (int i = 0; i < MAP_INCREMENT_TASK_MAX_ENTRIES; i++) {

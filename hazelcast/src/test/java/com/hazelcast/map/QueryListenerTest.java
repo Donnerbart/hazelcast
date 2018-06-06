@@ -148,10 +148,7 @@ public class QueryListenerTest extends HazelcastTestSupport {
             if (val == null) {
                 return false;
             }
-            if (val.startsWith(pref)) {
-                return true;
-            }
-            return false;
+            return val.startsWith(pref);
         }
     }
 

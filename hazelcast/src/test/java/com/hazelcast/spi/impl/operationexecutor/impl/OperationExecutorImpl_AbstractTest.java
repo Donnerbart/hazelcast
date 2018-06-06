@@ -95,7 +95,7 @@ public abstract class OperationExecutorImpl_AbstractTest extends HazelcastTestSu
     public static <E> void assertEqualsEventually(final PartitionSpecificCallable task, final E expected) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(task + " has not given a response", task.completed());
                 assertEquals(expected, task.getResult());
             }

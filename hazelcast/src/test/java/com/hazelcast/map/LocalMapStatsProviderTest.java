@@ -46,7 +46,7 @@ public class LocalMapStatsProviderTest extends HazelcastTestSupport {
 
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 //check partition migration triggered or not
                 int partitionStateVersion = getNode(instance).getPartitionService().getPartitionStateVersion();
                 assertEquals(0, partitionStateVersion);

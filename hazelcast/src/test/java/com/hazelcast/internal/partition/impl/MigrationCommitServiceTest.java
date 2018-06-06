@@ -425,8 +425,7 @@ public class MigrationCommitServiceTest extends HazelcastTestSupport {
     private void assertMigrationSourceCommit(final MigrationInfo migration) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 TestMigrationAwareService service = getService(migration.getSource());
 
                 String msg = getAssertMessage(migration, service);
@@ -449,8 +448,7 @@ public class MigrationCommitServiceTest extends HazelcastTestSupport {
     private void assertMigrationSourceRollback(final MigrationInfo migration) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 TestMigrationAwareService service = getService(migration.getSource());
 
                 String msg = getAssertMessage(migration, service);
@@ -473,8 +471,7 @@ public class MigrationCommitServiceTest extends HazelcastTestSupport {
     private void assertMigrationDestinationCommit(final MigrationInfo migration) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 TestMigrationAwareService service = getService(migration.getDestination());
 
                 String msg = getAssertMessage(migration, service);
@@ -499,8 +496,7 @@ public class MigrationCommitServiceTest extends HazelcastTestSupport {
     private void assertMigrationDestinationRollback(final MigrationInfo migration) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 TestMigrationAwareService service = getService(migration.getDestination());
 
                 String msg = getAssertMessage(migration, service);

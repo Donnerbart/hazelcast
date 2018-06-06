@@ -52,7 +52,7 @@ public class PNCounterBounceTest extends AbstractCRDTBounceTest {
     protected void assertState(final HazelcastInstance hazelcastInstance) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(assertionCounter.get(), hazelcastInstance.getPNCounter(TEST_PN_COUNTER_NAME).get());
             }
         });

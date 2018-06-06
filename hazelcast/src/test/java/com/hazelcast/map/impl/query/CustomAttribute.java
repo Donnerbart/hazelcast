@@ -49,11 +49,7 @@ public class CustomAttribute implements Serializable, Comparable<CustomAttribute
         if (age != that.age) {
             return false;
         }
-        if (height != that.height) {
-            return false;
-        }
-
-        return true;
+        return height == that.height;
     }
 
     @Override

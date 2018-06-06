@@ -86,7 +86,7 @@ public class ReliableTopicDestroyTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 final String name = TOPIC_RB_PREFIX + RELIABLE_TOPIC_NAME;
                 final Map<ObjectNamespace, RingbufferContainer> partitionContainers =
                         ringbufferService.getContainers().get(ringbufferService.getRingbufferPartitionId(name));

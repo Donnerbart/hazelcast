@@ -59,7 +59,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
      * fails with a TimeoutException.
      */
     @Test
-    public void whenGetTimeout_thenTimeoutException() throws InterruptedException, ExecutionException, TimeoutException {
+    public void whenGetTimeout_thenTimeoutException() throws InterruptedException, ExecutionException {
         Config config = new Config();
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         HazelcastInstance local = factory.newHazelcastInstance(config);
@@ -140,7 +140,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void async_whenLongRunningOperation() throws InterruptedException, ExecutionException, TimeoutException {
+    public void async_whenLongRunningOperation() {
         long callTimeout = 10000;
         Config config = new Config().setProperty(OPERATION_CALL_TIMEOUT_MILLIS.getName(), "" + callTimeout);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
@@ -159,7 +159,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 verify(callback).onResponse(RESPONSE);
             }
         });
@@ -200,7 +200,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void async_whenHeartbeatTimeout_thenOperationTimeoutException() throws Exception {
+    public void async_whenHeartbeatTimeout_thenOperationTimeoutException() {
         long callTimeoutMs = 1000;
         Config config = new Config().setProperty(OPERATION_CALL_TIMEOUT_MILLIS.getName(), "" + callTimeoutMs);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
@@ -256,7 +256,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void async_whenEventuallyHeartbeatTimeout_thenOperationTimeoutException() throws Exception {
+    public void async_whenEventuallyHeartbeatTimeout_thenOperationTimeoutException() {
         long callTimeoutMs = 5000;
         Config config = new Config().setProperty(OPERATION_CALL_TIMEOUT_MILLIS.getName(), "" + callTimeoutMs);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
@@ -310,7 +310,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void async_whenCallTimeout_thenOperationTimeoutException() throws Exception {
+    public void async_whenCallTimeout_thenOperationTimeoutException() {
         long callTimeoutMs = 60000;
         Config config = new Config().setProperty(OPERATION_CALL_TIMEOUT_MILLIS.getName(), "" + callTimeoutMs);
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
@@ -340,7 +340,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     private static void assertEventuallyFailsWithHeartbeatTimeout(final ExecutionCallback callback) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 ArgumentCaptor<Throwable> argument = ArgumentCaptor.forClass(Throwable.class);
                 verify(callback).onFailure(argument.capture());
                 Throwable cause = argument.getValue();
@@ -353,7 +353,7 @@ public class Invocation_TimeoutTest extends HazelcastTestSupport {
     private static void assertEventuallyFailsWithCallTimeout(final ExecutionCallback callback) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 ArgumentCaptor<Throwable> argument = ArgumentCaptor.forClass(Throwable.class);
                 verify(callback).onFailure(argument.capture());
 

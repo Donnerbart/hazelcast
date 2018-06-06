@@ -87,7 +87,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(36, queryCache.size());
             }
         });
@@ -108,7 +108,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
         mapConfig.addQueryCacheConfig(queryCacheConfig);
 
         HazelcastInstance node = instanceFactory.newHazelcastInstance(config);
-        IMap<Integer, Integer> map = (IMap<Integer, Integer>) node.<Integer, Integer>getMap(mapName);
+        IMap<Integer, Integer> map = node.<Integer, Integer>getMap(mapName);
 
         final QueryCache<Integer, Integer> queryCache = map.getQueryCache(queryCacheName, new SqlPredicate("this > 20"), true);
 
@@ -138,7 +138,7 @@ public class QueryCacheGuaranteesTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(43, queryCache.size());
             }
         });

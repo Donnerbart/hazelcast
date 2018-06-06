@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class CacheReplicationOperationTest extends HazelcastTestSupport {
 
     @Test
-    public void sendsConfigObjectOverWire() throws Exception {
+    public void sendsConfigObjectOverWire() {
         // new config
         CacheConfig config = new CacheConfig("test-cache");
 
@@ -59,7 +59,7 @@ public class CacheReplicationOperationTest extends HazelcastTestSupport {
 
         // serialize & deserialize operation
         Data data = nodeEngineImpl.toData(operation);
-        CacheReplicationOperation cacheReplicationOperation = (CacheReplicationOperation) nodeEngineImpl.toObject(data);
+        CacheReplicationOperation cacheReplicationOperation = nodeEngineImpl.toObject(data);
 
         // new operation instance should have previously added config.
         assertContains(cacheReplicationOperation.getConfigs(), config);

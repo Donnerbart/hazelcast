@@ -47,7 +47,7 @@ public class ClearWanQueuesTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testClearWanQueue() throws Exception {
+    public void testClearWanQueue() {
         ClearWanQueuesRequest clearWanQueuesRequest = new ClearWanQueuesRequest("schema", "publisher");
         JsonObject jsonObject = new JsonObject();
         clearWanQueuesRequest.writeResponse(managementCenterService, jsonObject);

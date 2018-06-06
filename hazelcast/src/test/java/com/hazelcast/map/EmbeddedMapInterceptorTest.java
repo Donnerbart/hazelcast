@@ -121,7 +121,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
 
 
     @Test
-    public void testPutInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testPutInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -135,7 +135,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testPutIfAbsentInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testPutIfAbsentInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -149,7 +149,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testPutTransientInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testPutTransientInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -163,7 +163,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testReplaceInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testReplaceInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -178,7 +178,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testReplaceIfSameInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testReplaceIfSameInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -193,7 +193,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testSetInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testSetInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);
@@ -207,7 +207,7 @@ public class EmbeddedMapInterceptorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTryPutInterceptedValuePropagatesToBackupCorrectly() throws Exception {
+    public void testTryPutInterceptedValuePropagatesToBackupCorrectly() {
         TestHazelcastInstanceFactory nodeFactory = createHazelcastInstanceFactory(3);
         HazelcastInstance h1 = startNode(nodeFactory);
         HazelcastInstance h2 = startNode(nodeFactory);

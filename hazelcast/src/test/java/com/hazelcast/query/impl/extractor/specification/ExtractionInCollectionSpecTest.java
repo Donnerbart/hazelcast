@@ -74,11 +74,11 @@ public class ExtractionInCollectionSpecTest extends AbstractExtractionTest {
     );
 
     private static final Person HUNT_NULL_TATTOOS = person("Hunt",
-            limb("left", null, new Finger[]{})
+            limb("left", null)
     );
 
     private static final Person HUNT_NULL_TATTOO_IN_ARRAY = person("Hunt",
-            limb("left", tattoos(null, "cross"), new Finger[]{})
+            limb("left", tattoos(null, "cross"))
     );
 
     private static final Person HUNT_NULL_LIMB = person("Hunt");

@@ -220,7 +220,7 @@ public class TopicTest extends HazelcastTestSupport {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testTopicGlobalOrder() throws Exception {
+    public void testTopicGlobalOrder() {
         final int nodeCount = 5;
         final int count = 1000;
         final String randomTopicName = randomString();
@@ -262,7 +262,7 @@ public class TopicTest extends HazelcastTestSupport {
         // all messages in nodes messageLists should be equal
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 int i = 0;
                 do {
                     assertEquals(messageListPerNode[i], messageListPerNode[i++]);
@@ -309,11 +309,7 @@ public class TopicTest extends HazelcastTestSupport {
             if (data != null ? !data.equals(that.data) : that.data != null) {
                 return false;
             }
-            if (publisher != null ? !publisher.equals(that.publisher) : that.publisher != null) {
-                return false;
-            }
-
-            return true;
+            return publisher != null ? publisher.equals(that.publisher) : that.publisher == null;
         }
 
         @Override
@@ -470,7 +466,7 @@ public class TopicTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void addTwoListenerAndRemoveOne() throws InterruptedException {
+    public void addTwoListenerAndRemoveOne() {
         String topicName = "addTwoListenerAndRemoveOne" + generateRandomString(5);
 
         HazelcastInstance instance = createHazelcastInstance();
@@ -512,7 +508,7 @@ public class TopicTest extends HazelcastTestSupport {
      * Testing if topic can properly listen messages and if topic has any issue after a shutdown.
      */
     @Test
-    public void testTopicCluster() throws InterruptedException {
+    public void testTopicCluster() {
         String topicName = "TestMessages" + generateRandomString(5);
         Config cfg = new Config();
 

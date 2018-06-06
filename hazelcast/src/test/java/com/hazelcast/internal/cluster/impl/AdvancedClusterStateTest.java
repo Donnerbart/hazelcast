@@ -420,8 +420,7 @@ public class AdvancedClusterStateTest extends HazelcastTestSupport {
         final InternalPartition partition = getNode(hz2).getPartitionService().getPartition(partitionId);
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run()
-                    throws Exception {
+            public void run() {
                 assertEquals(owner, partition.getOwnerOrNull());
             }
         }, 3);
@@ -635,7 +634,7 @@ public class AdvancedClusterStateTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(future.isDone());
             }
         });

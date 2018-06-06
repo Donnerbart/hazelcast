@@ -58,30 +58,30 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test(expected = NoSuchElementException.class)
-    public void test_next_Throws_Exception_On_EmptyPartition() throws Exception {
+    public void test_next_Throws_Exception_On_EmptyPartition() {
         proxy.iterator(10, 1,
                 new TestProjection(), TruePredicate.<String, String>truePredicate()).next();
     }
 
     @Test(expected = NullPointerException.class)
-    public void test_null_projection_throws_exception() throws Exception {
+    public void test_null_projection_throws_exception() {
         proxy.iterator(10, 1, null, TruePredicate.<String, String>truePredicate());
     }
 
     @Test(expected = NullPointerException.class)
-    public void test_null_predicate_throws_exception() throws Exception {
+    public void test_null_predicate_throws_exception() {
         proxy.iterator(10, 1, new TestProjection(), null);
     }
 
     @Test
-    public void test_HasNext_Returns_False_On_EmptyPartition() throws Exception {
+    public void test_HasNext_Returns_False_On_EmptyPartition() {
         final Iterator<String> iterator = proxy.iterator(10, 1,
                 new TestProjection(), TruePredicate.<String, String>truePredicate());
         assertFalse(iterator.hasNext());
     }
 
     @Test
-    public void test_Next_Returns_Value_On_NonEmptyPartition() throws Exception {
+    public void test_Next_Returns_Value_On_NonEmptyPartition() {
         String value = randomString();
         fillMap(proxy, 1, 1, value);
 
@@ -92,7 +92,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_Next_Returns_Value_On_NonEmptyPartition_and_HasNext_Returns_False_when_Item_Consumed() throws Exception {
+    public void test_Next_Returns_Value_On_NonEmptyPartition_and_HasNext_Returns_False_when_Item_Consumed() {
         String value = randomString();
         fillMap(proxy, 1, 1, value);
 
@@ -105,7 +105,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_HasNext_Returns_True_On_NonEmptyPartition() throws Exception {
+    public void test_HasNext_Returns_True_On_NonEmptyPartition() {
         fillMap(proxy, 1, 1, randomString());
 
         final Iterator<String> iterator = proxy.iterator(10, 1,
@@ -115,7 +115,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
 
 
     @Test
-    public void test_with_projection_and_true_predicate() throws Exception {
+    public void test_with_projection_and_true_predicate() {
         fillMap(proxy, 1, 100, randomString());
         final Iterator<String> iterator = proxy.iterator(10, 1,
                 new TestProjection(), TruePredicate.<String, String>truePredicate());
@@ -130,7 +130,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_with_projection_and_predicate() throws Exception {
+    public void test_with_projection_and_predicate() {
         final MapProxyImpl<String, Integer> intMap =
                 (MapProxyImpl<String, Integer>) instance.<String, Integer>getMap(randomMapName());
         fillMap(intMap, 1, 100);
@@ -153,7 +153,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test(expected = UnsupportedOperationException.class)
-    public void test_remove_Throws_Exception() throws Exception {
+    public void test_remove_Throws_Exception() {
         final Iterator<String> iterator = proxy.iterator(10, 1,
                 new TestProjection(), TruePredicate.<String, String>truePredicate());
 
@@ -161,7 +161,7 @@ public class MapQueryPartitionIteratorTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void test_Next_Returns_Values_When_FetchSizeExceeds_On_NonEmptyPartition() throws Exception {
+    public void test_Next_Returns_Values_When_FetchSizeExceeds_On_NonEmptyPartition() {
         String value = randomString();
         fillMap(proxy, 1, 100, value);
         final Iterator<String> iterator = proxy.iterator(10, 1,

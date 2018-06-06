@@ -233,7 +233,7 @@ public class DefaultQueryCacheEventDataTest {
     }
 
     @Test
-    public void testCopyConstructor() throws Exception {
+    public void testCopyConstructor() {
         DefaultQueryCacheEventData actual = new DefaultQueryCacheEventData();
         actual.setPartitionId(1);
         actual.setEventType(2);

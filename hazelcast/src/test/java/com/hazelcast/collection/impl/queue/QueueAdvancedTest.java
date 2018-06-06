@@ -181,7 +181,7 @@ public class QueueAdvancedTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testTake() throws Exception {
+    public void testTake() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         HazelcastInstance[] instances = factory.newInstances();
         HazelcastInstance h1 = instances[0];
@@ -431,7 +431,7 @@ public class QueueAdvancedTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void queueEntriesShouldBeConsistentAfterShutdown() throws Exception {
+    public void queueEntriesShouldBeConsistentAfterShutdown() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         HazelcastInstance[] instances = factory.newInstances();
         HazelcastInstance h1 = instances[0];
@@ -457,7 +457,7 @@ public class QueueAdvancedTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void queueEntriesShouldBeConsistentAfterShutdown_switchedInstanceOrder() throws Exception {
+    public void queueEntriesShouldBeConsistentAfterShutdown_switchedInstanceOrder() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory(2);
         HazelcastInstance[] instances = factory.newInstances();
         HazelcastInstance h1 = instances[0];

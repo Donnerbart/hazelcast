@@ -212,7 +212,7 @@ public class MembershipFailureTest extends HazelcastTestSupport {
         final ClusterServiceImpl clusterService = getNode(masterCandidate).getClusterService();
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(clusterService.getClusterJoinManager().isMastershipClaimInProgress());
             }
         });
@@ -245,7 +245,7 @@ public class MembershipFailureTest extends HazelcastTestSupport {
         final ClusterServiceImpl clusterService = getNode(masterCandidate).getClusterService();
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(clusterService.getClusterJoinManager().isMastershipClaimInProgress());
             }
         });
@@ -331,7 +331,7 @@ public class MembershipFailureTest extends HazelcastTestSupport {
         final MembershipManager membershipManager = getNode(slave1).getClusterService().getMembershipManager();
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(membershipManager.isMemberSuspected(getAddress(slave2)));
             }
         });
@@ -340,7 +340,7 @@ public class MembershipFailureTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertFalse(membershipManager.isMemberSuspected(getAddress(slave2)));
             }
         });

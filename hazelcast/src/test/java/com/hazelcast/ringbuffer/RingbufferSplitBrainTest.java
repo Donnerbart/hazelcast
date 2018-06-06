@@ -168,7 +168,7 @@ public class RingbufferSplitBrainTest extends SplitBrainTestSupport {
     }
 
     @Override
-    protected void onBeforeSplitBrainCreated(HazelcastInstance[] instances) throws Exception {
+    protected void onBeforeSplitBrainCreated(HazelcastInstance[] instances) {
         this.serializationService = getSerializationService(instances[0]);
     }
 

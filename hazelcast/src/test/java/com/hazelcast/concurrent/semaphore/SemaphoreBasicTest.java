@@ -70,13 +70,13 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testAcquire_whenNoPermits() throws InterruptedException {
+    public void testAcquire_whenNoPermits() {
         semaphore.init(0);
         final AcquireThread acquireThread = new AcquireThread(semaphore);
         acquireThread.start();
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(acquireThread.isAlive());
                 assertEquals(0, semaphore.availablePermits());
             }
@@ -84,7 +84,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testAcquire_whenNoPermits_andSemaphoreDestroyed() throws InterruptedException {
+    public void testAcquire_whenNoPermits_andSemaphoreDestroyed() {
         AcquireThread thread = new AcquireThread(semaphore);
         thread.start();
 
@@ -156,7 +156,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testRelease_whenBlockedAcquireThread() throws InterruptedException {
+    public void testRelease_whenBlockedAcquireThread() {
         semaphore.init(0);
 
         new Thread() {
@@ -173,7 +173,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(0, semaphore.availablePermits());
             }
         });
@@ -207,7 +207,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testMultipleAcquire_whenNotEnoughPermits() throws InterruptedException {
+    public void testMultipleAcquire_whenNotEnoughPermits() {
         int numberOfPermits = 5;
         semaphore.init(numberOfPermits);
         final Thread thread = new Thread() {
@@ -227,7 +227,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
 
         assertTrueAllTheTime(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertTrue(thread.isAlive());
                 assertEquals(5, semaphore.availablePermits());
             }
@@ -246,7 +246,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testMultipleRelease_whenNegative() throws InterruptedException {
+    public void testMultipleRelease_whenNegative() {
         semaphore.init(0);
 
         try {
@@ -283,7 +283,7 @@ public abstract class SemaphoreBasicTest extends HazelcastTestSupport {
     }
 
     @Test(timeout = 30000)
-    public void testDrain_whenNoPermits() throws InterruptedException {
+    public void testDrain_whenNoPermits() {
         semaphore.init(0);
         assertEquals(0, semaphore.drainPermits());
     }

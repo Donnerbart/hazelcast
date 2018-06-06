@@ -177,7 +177,7 @@ public class MemberMapReconciliationTest extends HazelcastTestSupport {
                                                              final HazelcastInstance server) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 final DefaultNearCache nearCache = getNearCache((NearCachedMapProxyImpl) nearCachedMapFromNewServer);
 
                 StaleReadDetector staleReadDetector = nearCache.getNearCacheRecordStore().getStaleReadDetector();

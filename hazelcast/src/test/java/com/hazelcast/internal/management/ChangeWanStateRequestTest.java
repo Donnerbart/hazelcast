@@ -44,7 +44,7 @@ public class ChangeWanStateRequestTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testResumingWanState() throws Exception {
+    public void testResumingWanState() {
         ChangeWanStateRequest changeWanStateRequest = new ChangeWanStateRequest("schema", "publisher", true);
         JsonObject jsonObject = new JsonObject();
         changeWanStateRequest.writeResponse(managementCenterService, jsonObject);
@@ -54,7 +54,7 @@ public class ChangeWanStateRequestTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void testPausingWanState() throws Exception {
+    public void testPausingWanState() {
         ChangeWanStateRequest changeWanStateRequest = new ChangeWanStateRequest("schema", "publisher", false);
         JsonObject jsonObject = new JsonObject();
         changeWanStateRequest.writeResponse(managementCenterService, jsonObject);

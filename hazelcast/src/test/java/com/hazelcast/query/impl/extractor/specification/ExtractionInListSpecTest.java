@@ -67,7 +67,7 @@ public class ExtractionInListSpecTest extends AbstractExtractionTest {
     );
 
     private static final Person HUNT_NULL_TATTOOS = person("Hunt",
-            limb("left", null, new Finger[]{})
+            limb("left", null)
     );
 
     private static final Person HUNT_NULL_LIMB = person("Hunt");

@@ -356,10 +356,7 @@ public class IndexTest {
             if (s != that.s) {
                 return false;
             }
-            if (str != null ? !str.equals(that.str) : that.str != null) {
-                return false;
-            }
-            return true;
+            return str != null ? str.equals(that.str) : that.str == null;
         }
 
         @Override

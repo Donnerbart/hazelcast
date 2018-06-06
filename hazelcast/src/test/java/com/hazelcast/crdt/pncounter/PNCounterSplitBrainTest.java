@@ -116,7 +116,7 @@ public class PNCounterSplitBrainTest extends SplitBrainTestSupport {
     private void assertCounterValueEventually(final long expectedValue, final PNCounter counter) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertEquals(expectedValue, counter.get());
             }
         });

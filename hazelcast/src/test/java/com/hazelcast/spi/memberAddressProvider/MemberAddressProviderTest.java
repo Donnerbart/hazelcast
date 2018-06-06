@@ -177,7 +177,7 @@ public class MemberAddressProviderTest {
         public static Properties properties;
 
         public MemberAddressProviderWithStaticProperties(Properties properties) {
-            this.properties = properties;
+            MemberAddressProviderWithStaticProperties.properties = properties;
         }
 
         @Override

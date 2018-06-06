@@ -130,8 +130,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.put(1, new Person("a", 40));
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -143,8 +142,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.put(1, new Person("a", 75));
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -156,8 +154,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.put(1, new Person("a", 35));
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 0);
@@ -170,8 +167,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.remove(1);
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -184,8 +180,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.remove(1);
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -198,8 +193,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
         map.remove(1);
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 0);
@@ -213,8 +207,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -229,8 +222,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -244,8 +236,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 0);
@@ -259,8 +250,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, 1);
@@ -275,8 +265,7 @@ public abstract class AbstractEntryEventTypesTest extends HazelcastTestSupport {
 
         assertEqualsEventually(new Callable<Integer>() {
             @Override
-            public Integer call()
-                    throws Exception {
+            public Integer call() {
                 return eventCounter.get();
             }
         }, expectedCountFor_entryUpdatedEvent_whenOldValueMatches_newValueOutsidePredicate());

@@ -140,7 +140,7 @@ public abstract class AbstractCRDTBounceTest extends HazelcastTestSupport {
         }
 
         @Override
-        public void doRun() throws Throwable {
+        public void doRun() {
             int index = 0;
             while (!stop.get()) {
                 index = (index + 1) % instances.length();

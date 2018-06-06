@@ -240,7 +240,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
     }
 
     @Test
-    public void promotion_shouldFail_whenMastershipClaimInProgress_duringPromotion() throws Exception {
+    public void promotion_shouldFail_whenMastershipClaimInProgress_duringPromotion() {
         TestHazelcastInstanceFactory factory = createHazelcastInstanceFactory();
 
         HazelcastInstance hz1 = factory.newHazelcastInstance(new Config());
@@ -269,7 +269,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
         final Cluster cluster = hz3.getCluster();
         Future<Exception> future = spawn(new Callable<Exception>() {
             @Override
-            public Exception call() throws Exception {
+            public Exception call() {
                 try {
                     cluster.promoteLocalLiteMember();
                 } catch (Exception e) {
@@ -336,7 +336,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
         memberAttributes_arePreserved_afterPromotion(false);
     }
 
-    private void memberAttributes_arePreserved_afterPromotion(boolean isMaster) throws Exception {
+    private void memberAttributes_arePreserved_afterPromotion(boolean isMaster) {
         final String attribute1 = "attr1";
         final String attribute2 = "attr2";
         final String attributeValue = "value";
@@ -381,7 +381,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
 
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 for (Map.Entry<Long, Invocation> entry : invocationRegistry.entrySet()) {
                     if (entry.getValue().op instanceof PromoteLiteMemberOp) {
                         return;
@@ -395,7 +395,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
     private static void assertPartitionsAssignedEventually(final HazelcastInstance instance) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertPartitionsAssigned(instance);
             }
         });
@@ -433,7 +433,7 @@ public class PromoteLiteMemberTest extends HazelcastTestSupport {
     private static void assertAllNormalMembersEventually(final Cluster cluster) {
         assertTrueEventually(new AssertTask() {
             @Override
-            public void run() throws Exception {
+            public void run() {
                 assertAllNormalMembers(cluster);
             }
         });
